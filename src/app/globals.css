@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-bricolage), var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+
+  --color-pine-950: #0e2419;
+  --color-pine-900: #133222;
+  --color-pine-800: #18402d;
+  --color-pine-700: #1f4d3a;
+  --color-pine-600: #2a624a;
+  --color-pine-500: #3a7a5d;
+  --color-pine-100: #e3ede6;
+
+  --color-sage-50: #f4f7f1;
+  --color-sage-100: #eef2ea;
+  --color-sage-200: #dce4d5;
+  --color-sage-300: #c3d1b8;
+  --color-sage-400: #a3b78f;
+  --color-sage-500: #84996f;
+  --color-sage-600: #687c55;
+
+  --color-cream: #faf8f3;
+  --color-ink: #1b2420;
+  --color-muted: #5b6b62;
+  --color-line: #e3e8de;
+  --color-honey: #c99a3b;
+  --color-honey-50: #fbf4e4;
+  --color-danger: #b4412f;
+  --color-danger-50: #fbecea;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-cream text-ink font-sans antialiased;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display tracking-tight;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  ::selection {
+    @apply bg-sage-300;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-pine-600;
+  }
+}
+
+/* Native inputs keep a 16px font on mobile so iOS doesn't zoom on focus. */
+@utility input-base {
+  @apply block w-full rounded-xl border border-line bg-white px-3.5 py-3 text-base text-ink shadow-[0_1px_0_rgba(27,36,32,0.03)] placeholder:text-muted/60 transition;
+  &:focus {
+    @apply border-pine-600 outline-none ring-4 ring-pine-600/10;
+  }
+  &[aria-invalid="true"] {
+    @apply border-danger ring-4 ring-danger/10;
+  }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@utility animate-rise {
+  animation: rise 0.35s ease-out both;
+}

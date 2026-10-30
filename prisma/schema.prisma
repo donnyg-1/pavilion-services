@@ -1,0 +1,413 @@
+// Pavilion Services data model.
+// Money is stored in integer cents; percentages in basis points (1500 = 15%).
+// Fields marked (M2) are reserved for Milestone 2 and unused for now.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Organizations ───────────────────────────────────────────────────────────
+
+model ManagementCompany {
+  id              String      @id @default(cuid())
+  name            String
+  contactName     String?
+  contactEmail    String?
+  stripeAccountId String? // (M2) Connect payouts
+  communities     Community[]
+  createdAt       DateTime    @default(now())
+}
+
+model Community {
+  id                  String             @id @default(cuid())
+  name                String
+  slug                String             @unique
+  city                String?
+  managementCompanyId String?
+  managementCompany   ManagementCompany? @relation(fields: [managementCompanyId], references: [id])
+  stripeAccountId     String? // (M2) Connect payouts to the HOA reserve fund
+  addresses           CommunityAddress[]
+  deals               Deal[]
+  createdAt           DateTime           @default(now())
+}
+
+// The community's address list (uploaded as CSV). Shared across all deals in the community.
+model CommunityAddress {
+  id          String     @id @default(cuid())
+  communityId String
+  community   Community  @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  raw         String // as uploaded, for display
+  normalized  String // matching key, see lib/domain/address.ts
+  active      Boolean    @default(true) // false when dropped by a later "replace" upload
+  createdAt   DateTime   @default(now())
+  bookings    Booking[]
+  residents   Resident[]
+
+  @@unique([communityId, normalized])
+}
+
+model Vendor {
+  id              String   @id @default(cuid())
+  name            String
+  contactName     String?
+  email           String?
+  phone           String?
+  stripeAccountId String? // (M2) Connect payouts
+  deals           Deal[]
+  createdAt       DateTime @default(now())
+}
+
+// ─── Deals ───────────────────────────────────────────────────────────────────
+
+enum DealStatus {
+  draft
+  open
+  completed
+  archived
+}
+
+// How the manager and HOA shares are calculated. Kept open on purpose:
+// "price" = % of the final job price, "commission" = % of Pavilion's commission.
+enum ShareBasis {
+  price
+  commission
+}
+
+model Deal {
+  id                  String     @id @default(cuid())
+  slug                String     @unique
+  status              DealStatus @default(draft)
+  communityId         String
+  community           Community  @relation(fields: [communityId], references: [id])
+  vendorId            String
+  vendor              Vendor     @relation(fields: [vendorId], references: [id])
+
+  serviceName         String // "Gutter cleaning"
+  title               String // "Gutter Day"
+  description         String     @default("")
+  whatsIncluded       String     @default("") // one item per line
+
+  serviceDate         DateTime   @db.Date
+  backupDate          DateTime?  @db.Date
+  rescheduledAt       DateTime? // last time the date moved (weather) and everyone was notified
+  arrivalWindow       String     @default("") // "8am–5pm"
+  signupDeadline      DateTime
+  capacity            Int
+
+  normalPriceCents    Int
+  tiers               PriceTier[]
+  addOns              AddOn[]
+
+  commissionBps       Int        @default(1500)
+  managerShareBps     Int        @default(400)
+  hoaShareBps         Int        @default(300)
+  shareBasis          ShareBasis @default(price)
+
+  // Copy that varies per deal. {community} is replaced with the community name.
+  reserveFundLine     String     @default("A share of every booking goes to {community}'s reserve fund.")
+  guaranteeLine       String     @default("If you're not happy, the crew comes back to make it right, or you get your money back.")
+  cancellationPolicy  String     @default("Cancel free anytime before signups close. After that, contact us and we'll work it out.")
+
+  // Highest number of simultaneous bookings ever reached. Tiers unlock off this,
+  // so the price only goes down, even if someone cancels.
+  peakBookedCount     Int        @default(0)
+  lockedPriceCents    Int? // set once at the signup deadline
+  lockedAt            DateTime?
+
+  vendorToken         String     @unique @default(cuid()) // (M2) vendor job page link
+  seriesId            String? // (M2) recurring services, e.g. quarterly pest control
+
+  bookings            Booking[]
+  waitlist            WaitlistEntry[]
+  addressReviews      AddressReview[]
+  ledger              LedgerEntry[]
+  visits              DealVisit[]
+  messages            MessageLog[]
+
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+}
+
+model PriceTier {
+  id         String @id @default(cuid())
+  dealId     String
+  deal       Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  minHomes   Int // tier applies once this many homes have booked
+  priceCents Int
+
+  @@unique([dealId, minHomes])
+}
+
+// Optional extras at a flat price, booked for the same visit (not tiered).
+model AddOn {
+  id          String         @id @default(cuid())
+  dealId      String
+  deal        Deal           @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  name        String
+  description String         @default("")
+  priceCents  Int
+  sortOrder   Int            @default(0)
+  active      Boolean        @default(true)
+  bookings    BookingAddOn[]
+}
+
+// ─── Residents & bookings ────────────────────────────────────────────────────
+
+// No login. One household, keyed by email, reused across deals and (M2) recurring services.
+model Resident {
+  id                 String            @id @default(cuid())
+  email              String            @unique
+  name               String
+  phone              String
+  communityAddressId String?
+  communityAddress   CommunityAddress? @relation(fields: [communityAddressId], references: [id])
+  stripeCustomerId   String?
+  smsOptIn           Boolean           @default(false) // (M2) Twilio
+  bookings           Booking[]
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+}
+
+enum BookingStatus {
+  pending_setup // spot held while the resident saves a card
+  booked
+  cancelled
+  completed // job done, charge in flight
+  charged
+  failed // off-session charge failed; resident emailed a payment link
+  refunded
+  expired // never finished saving a card
+}
+
+enum BookingSource {
+  manager
+  board
+  facebook
+  flyer
+  referral
+  direct
+}
+
+model Booking {
+  id                    String           @id @default(cuid())
+  dealId                String
+  deal                  Deal             @relation(fields: [dealId], references: [id])
+  residentId            String
+  resident              Resident         @relation(fields: [residentId], references: [id])
+  communityAddressId    String
+  communityAddress      CommunityAddress @relation(fields: [communityAddressId], references: [id])
+  unit                  String? // as typed by the resident
+  notes                 String           @default("") // gate codes, dogs, etc.
+
+  status                BookingStatus    @default(pending_setup)
+  source                BookingSource    @default(direct)
+  referralCode          String           @unique // this booking's own share code
+  referredById          String?
+  referredBy            Booking?         @relation("Referrals", fields: [referredById], references: [id])
+  referrals             Booking[]        @relation("Referrals")
+
+  publicToken           String           @unique // confirmation / cancel / rating links
+  holdExpiresAt         DateTime?
+  stripeCheckoutId      String?
+  stripePaymentMethodId String?
+  cardBrand             String?
+  cardLast4             String?
+
+  addOns                BookingAddOn[]
+  charges               Charge[]
+  ledger                LedgerEntry[]
+  rating                Rating?
+  messages              MessageLog[]
+
+  routeOrder            Int? // (M2) vendor job page
+  photoUrls             String[] // (M2) photo proof
+  bookedAt              DateTime?
+  cancelledAt           DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  @@index([dealId, status])
+}
+
+model BookingAddOn {
+  bookingId  String
+  booking    Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  addOnId    String
+  addOn      AddOn   @relation(fields: [addOnId], references: [id])
+  priceCents Int // price at time of booking
+
+  @@id([bookingId, addOnId])
+}
+
+model WaitlistEntry {
+  id         String        @id @default(cuid())
+  dealId     String
+  deal       Deal          @relation(fields: [dealId], references: [id])
+  name       String
+  email      String
+  phone      String
+  address    String
+  source     BookingSource @default(direct)
+  notifiedAt DateTime? // last "a spot opened" email
+  createdAt  DateTime      @default(now())
+
+  @@unique([dealId, email])
+}
+
+enum ReviewStatus {
+  open
+  approved
+  rejected
+}
+
+// "Not on the list? Request review"
+model AddressReview {
+  id         String       @id @default(cuid())
+  dealId     String
+  deal       Deal         @relation(fields: [dealId], references: [id])
+  name       String
+  email      String
+  phone      String
+  rawAddress String
+  status     ReviewStatus @default(open)
+  createdAt  DateTime     @default(now())
+  resolvedAt DateTime?
+}
+
+// ─── Money ───────────────────────────────────────────────────────────────────
+
+enum ChargeStatus {
+  pending
+  succeeded
+  failed // declined or needs authentication; recovery link sent
+}
+
+model Charge {
+  id                    String        @id @default(cuid())
+  bookingId             String
+  booking               Booking       @relation(fields: [bookingId], references: [id])
+  amountCents           Int
+  status                ChargeStatus  @default(pending)
+  stripePaymentIntentId String?       @unique
+  failureCode           String?
+  failureMessage        String?
+  recoveryUrl           String? // Checkout link emailed to the resident
+  refundedCents         Int           @default(0)
+  ledger                LedgerEntry[]
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
+enum LedgerType {
+  charge
+  refund
+}
+
+enum PayoutStatus {
+  owed
+  paid
+}
+
+// Append-only. One "charge" row per successful charge; refunds add negative "refund" rows.
+// Invariant per row: vendor + manager + hoa + pavilionNet + processingFee = finalPrice.
+model LedgerEntry {
+  id                    String       @id @default(cuid())
+  dealId                String
+  deal                  Deal         @relation(fields: [dealId], references: [id])
+  bookingId             String
+  booking               Booking      @relation(fields: [bookingId], references: [id])
+  chargeId              String
+  charge                Charge       @relation(fields: [chargeId], references: [id])
+  type                  LedgerType
+  stripeRefId           String? // payment intent or refund id
+
+  finalPriceCents       Int
+  commissionCents       Int
+  managerShareCents     Int
+  hoaShareCents         Int
+  pavilionNetCents      Int
+  processingFeeCents    Int
+  feeAbsorbedCents      Int          @default(0) // refunds: Stripe keeps its fee, Pavilion eats it
+  vendorPayoutCents     Int
+  feeIsEstimate         Boolean      @default(false)
+
+  // Rates as they were at charge time
+  commissionBps         Int
+  managerShareBps       Int
+  hoaShareBps           Int
+  shareBasis            ShareBasis
+
+  // Manual payouts during the test; (M2) Connect transfer ids go in the *Ref fields
+  vendorPayoutStatus    PayoutStatus @default(owed)
+  managerPayoutStatus   PayoutStatus @default(owed)
+  hoaPayoutStatus       PayoutStatus @default(owed)
+  vendorPayoutRef       String?
+  managerPayoutRef      String?
+  hoaPayoutRef          String?
+
+  createdAt             DateTime     @default(now())
+
+  @@index([dealId])
+}
+
+// ─── Feedback, analytics, messaging ──────────────────────────────────────────
+
+model Rating {
+  id        String   @id @default(cuid())
+  bookingId String   @unique
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  score     Int
+  comment   String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// One row per browser per deal, so we can compare visitors to bookings by source.
+model DealVisit {
+  id        String        @id @default(cuid())
+  dealId    String
+  deal      Deal          @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  visitorId String
+  source    BookingSource
+  createdAt DateTime      @default(now())
+
+  @@unique([dealId, visitorId])
+}
+
+enum MessageChannel {
+  email
+  sms // (M2) Twilio
+}
+
+enum MessageStatus {
+  sent
+  logged // no provider configured; visible in the admin Outbox
+  failed
+}
+
+model MessageLog {
+  id         String         @id @default(cuid())
+  dealId     String?
+  deal       Deal?          @relation(fields: [dealId], references: [id])
+  bookingId  String?
+  booking    Booking?       @relation(fields: [bookingId], references: [id])
+  channel    MessageChannel @default(email)
+  template   String
+  to         String
+  subject    String
+  html       String
+  text       String
+  status     MessageStatus
+  providerId String?
+  error      String?
+  dedupeKey  String?        @unique // prevents double-sending reminders etc.
+  createdAt  DateTime       @default(now())
+
+  @@index([dealId])
+}
