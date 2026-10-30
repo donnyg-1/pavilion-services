@@ -1,9 +1,18 @@
 import { expect, test } from "@playwright/test";
 
-// End-to-end: resident books Gutter Day, admin closes signups and charges the card.
+// End-to-end: resident books Gutter Day (address suggestion + test card), admin closes signups and charges the card.
 // Needs fresh seed data (`npm run db:reset`) and mock payments. Uses a random address from the seed list.
 
 const streets = Array.from({ length: 20 }, (_, i) => `${1200 + i * 20} N 500 E`).slice(4);
+
+test.describe.configure({ mode: "serial" });
+
+test("wallet button books in one tap", async ({ page }) => {
+  await page.goto("/d/gutter-day?src=board");
+  test.skip(await page.getByText("Signups are closed").isVisible(), "Signups already closed. Run `npm run db:reset` for fresh seed data.");
+  await page.getByRole("button", { name: /Book with test wallet/ }).click();
+  await expect(page.getByRole("heading", { name: /You're booked/ })).toBeVisible();
+});
 
 test("resident books, admin charges, ledger records it", async ({ page, browser }) => {
   const email = `e2e-${Date.now()}@example.com`;
@@ -17,19 +26,20 @@ test("resident books, admin charges, ledger records it", async ({ page, browser 
   await page.fill("#email", email);
   await page.fill("#phone", "801-555-0111");
   await page.fill("#street", "1 Not A Real Rd");
-  await page.check("input[name=agreed]");
-  await page.click("button[type=submit]");
+  await page.getByRole("button", { name: /^Book for/ }).click();
   await expect(page.getByText("Not on the list? Request review")).toBeVisible();
 
-  await page.fill("#street", street);
-  await page.click("button[type=submit]");
+  // Typing a messy version of the address offers the real one from the community list.
+  await page.fill("#street", "");
+  await page.locator("#street").pressSequentially(street.split(" ").slice(0, 2).join(" "), { delay: 30 });
+  await page.getByRole("option").first().click();
+  await page.getByRole("button", { name: /^Book for/ }).click();
   const outcome = await Promise.race([
-    page.waitForURL(/mock-checkout/).then(() => "checkout"),
+    page.waitForURL(/\/b\//).then(() => "booked"),
     page.getByText("already booked").waitFor().then(() => "taken"),
   ]);
   test.skip(outcome === "taken", "Random address was already booked by an earlier run");
 
-  await page.getByRole("button", { name: "Save card" }).click();
   await expect(page.getByRole("heading", { name: /You're booked/ })).toBeVisible();
   await expect(page.getByTestId("share-url")).toContainText("ref=");
 
@@ -47,7 +57,7 @@ test("resident books, admin charges, ledger records it", async ({ page, browser 
     await expect(admin.getByText("Signups closed and the price is locked.")).toBeVisible();
   }
   await admin.goto(`${dealUrl}?tab=bookings&status=booked`);
-  const row = admin.locator("tr", { hasText: "E2E Resident" }).filter({ hasText: email });
+  const row = admin.locator("tr").filter({ hasText: email });
   await row.getByRole("button", { name: "Complete & charge" }).click();
   await expect(admin.getByText(/Charged \$/)).toBeVisible();
 

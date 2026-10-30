@@ -19,6 +19,8 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
+    "@stripe/react-stripe-js": "^7.0.1",
+    "@stripe/stripe-js": "^10.2.0",
     "dotenv": "^18.0.9",
     "jose": "^6.2.14",
     "next": "^16.4.3",

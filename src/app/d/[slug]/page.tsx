@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PublicFooter, PublicHeader } from "@/components/public-shell";
 import { TierLadder, TierProgress } from "@/components/tier-ladder";
-import { Card, Icon, Notice } from "@/components/ui";
+import { Card, Icon, Notice, buttonClass } from "@/components/ui";
 import { isAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { config } from "@/lib/config";
 import { formatDeadline, formatServiceDate } from "@/lib/dates";
 import { formatCents } from "@/lib/domain/money";
 import { countBookings, fillCopy, loadDealBySlug, lockDealIfDue, viewDeal } from "@/lib/services/deals";
@@ -102,6 +103,11 @@ export default async function DealPage({ params, searchParams }: Props) {
                 <span className="shrink-0 rounded-full bg-sage-200 px-3 py-1 text-sm font-bold text-pine-900">Save {formatCents(v.savingsCents)}</span>
               ) : null}
             </div>
+            {v.window === "open" ? (
+              <a href="#book" className={buttonClass("light", "lg", "mt-5 w-full bg-white text-pine-900 hover:bg-sage-100")}>
+                {v.isFull ? "Join the waitlist" : `Book for ${formatCents(v.priceCents)}`} <Icon name="arrow" className="size-5" />
+              </a>
+            ) : null}
           </div>
           <div className="space-y-4 px-5 py-5 sm:px-6">
             <TierProgress tiers={deal.tiers} confirmed={v.confirmed} currentTierMinHomes={v.currentTierMinHomes} next={v.next} locked={v.locked} />
@@ -118,6 +124,36 @@ export default async function DealPage({ params, searchParams }: Props) {
             </div>
           </div>
         </Card>
+
+        {/* Book */}
+        <section id="book" className="mt-4 scroll-mt-4">
+          <Card className="p-5 sm:p-6">
+            {v.window === "open" ? (
+              <>
+                <h2 className="text-2xl font-bold">{v.isFull ? "Join the waitlist" : "Book your home"}</h2>
+                <p className="mt-1 mb-5 text-muted">For {deal.community.name} homes only. Takes about a minute.</p>
+                <BookingForm
+                  slug={slug}
+                  communityName={deal.community.name}
+                  vendorName={deal.vendor.name}
+                  priceCents={v.priceCents}
+                  addOns={deal.addOns.map((a) => ({ id: a.id, name: a.name, description: a.description, priceCents: a.priceCents }))}
+                  src={src}
+                  refCode={ref}
+                  full={v.isFull}
+                  payments={{ mode: config.paymentsMode(), publishableKey: config.stripePublishableKey() }}
+                />
+              </>
+            ) : (
+              <div className="py-2 text-center">
+                <h2 className="text-2xl font-bold">Signups are closed</h2>
+                <p className="mt-2 text-muted">
+                  {v.confirmed} {deal.community.name} homes booked at {formatCents(v.priceCents)}. Watch for the next service day from your HOA.
+                </p>
+              </div>
+            )}
+          </Card>
+        </section>
 
         {/* Reserve fund */}
         <div className="mt-4 flex items-start gap-3 rounded-2xl border border-sage-200 bg-sage-100 px-4 py-3.5">
@@ -176,37 +212,6 @@ export default async function DealPage({ params, searchParams }: Props) {
             </div>
           </section>
         ) : null}
-
-        {/* Book */}
-        <section id="book" className="mt-10 scroll-mt-4">
-          <Card className="p-5 sm:p-6">
-            {v.window === "open" ? (
-              <>
-                <h2 className="text-2xl font-bold">{v.isFull ? "Join the waitlist" : "Book your home"}</h2>
-                <p className="mt-1 mb-5 text-muted">
-                  For {deal.community.name} homes only. We check your address against the community list.
-                </p>
-                <BookingForm
-                  slug={slug}
-                  communityName={deal.community.name}
-                  vendorName={deal.vendor.name}
-                  priceCents={v.priceCents}
-                  addOns={deal.addOns.map((a) => ({ id: a.id, name: a.name, description: a.description, priceCents: a.priceCents }))}
-                  src={src}
-                  refCode={ref}
-                  full={v.isFull}
-                />
-              </>
-            ) : (
-              <div className="py-2 text-center">
-                <h2 className="text-2xl font-bold">Signups are closed</h2>
-                <p className="mt-2 text-muted">
-                  {v.confirmed} {deal.community.name} homes booked at {formatCents(v.priceCents)}. Watch for the next service day from your HOA.
-                </p>
-              </div>
-            )}
-          </Card>
-        </section>
 
         {/* FAQ */}
         <section className="mt-10">

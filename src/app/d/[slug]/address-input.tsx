@@ -1,0 +1,103 @@
+"use client";
+
+import { useEffect, useId, useRef, useState } from "react";
+import { Icon, Input, cx } from "@/components/ui";
+
+/** Street address field that suggests matches from the community's address list as you type. */
+export function AddressInput({ slug, value, onChange, invalid }: { slug: string; value: string; onChange: (v: string) => void; invalid: boolean }) {
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const picked = useRef<string | null>(null);
+  const listId = useId();
+
+  useEffect(() => {
+    const q = value.trim();
+    if (q.length < 2 || !/^\d/.test(q) || picked.current === value) {
+      setSuggestions([]);
+      return;
+    }
+    const ctrl = new AbortController();
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/addresses?deal=${encodeURIComponent(slug)}&q=${encodeURIComponent(q)}`, { signal: ctrl.signal });
+        const data = (await res.json()) as { suggestions: string[] };
+        setSuggestions(data.suggestions);
+        setActive(-1);
+        setOpen(true);
+      } catch {
+        // aborted or offline: typing still works without suggestions
+      }
+    }, 120);
+    return () => {
+      clearTimeout(t);
+      ctrl.abort();
+    };
+  }, [value, slug]);
+
+  function pick(s: string) {
+    picked.current = s;
+    onChange(s);
+    setSuggestions([]);
+    setOpen(false);
+  }
+
+  const showList = open && suggestions.length > 0;
+  return (
+    <div className="relative">
+      <Input
+        id="street"
+        name="street"
+        autoComplete="address-line1"
+        placeholder="Start with your house number"
+        required
+        value={value}
+        role="combobox"
+        aria-expanded={showList}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
+        aria-invalid={invalid}
+        onChange={(e) => {
+          picked.current = null;
+          onChange(e.target.value);
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onKeyDown={(e) => {
+          if (!showList) return;
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setActive((i) => (i + 1) % suggestions.length);
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setActive((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
+          } else if (e.key === "Enter" && active >= 0) {
+            e.preventDefault();
+            pick(suggestions[active]);
+          } else if (e.key === "Escape") {
+            setOpen(false);
+          }
+        }}
+      />
+      {showList ? (
+        <ul id={listId} role="listbox" className="absolute inset-x-0 top-full z-20 mt-1.5 overflow-hidden rounded-xl border border-line bg-white py-1 shadow-lg shadow-pine-900/10">
+          {suggestions.map((s, i) => (
+            <li
+              key={s}
+              id={`${listId}-${i}`}
+              role="option"
+              aria-selected={i === active}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => pick(s)}
+              className={cx("flex cursor-pointer items-center gap-2.5 px-3.5 py-2.5 text-[15px]", i === active ? "bg-sage-100" : "hover:bg-sage-50")}
+            >
+              <Icon name="home" className="size-4 shrink-0 text-pine-600" />
+              {s}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}

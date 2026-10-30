@@ -8,6 +8,7 @@ import { currentPriceCents, tierUnlockedBetween } from "@/lib/domain/pricing";
 import { sendEmail } from "@/lib/email/send";
 import * as T from "@/lib/email/templates";
 import { payments, type SavedCard } from "@/lib/payments";
+import { MOCK_CARDS } from "@/lib/payments/mock";
 import { publicToken, referralCode } from "@/lib/tokens";
 import { bookingContext, bookingInclude, countBookings, dealContext, dealInclude, lockDealIfDue, viewDeal, type DealFull } from "./deals";
 
@@ -35,13 +36,12 @@ export const bookingSchema = z.object({
   unit: z.string().trim().max(20).optional().default(""),
   notes: z.string().trim().max(500).optional().default(""),
   addOnIds: z.array(z.string()).default([]),
-  agreed: z.literal(true, { message: "Please agree to the booking terms" }),
 });
 
 export const contactSchema = bookingSchema.pick({ name: true, email: true, phone: true, street: true, unit: true });
 
 export type BookingResult =
-  | { kind: "redirect"; url: string }
+  | { kind: "ready"; token: string; clientSecret: string }
   | { kind: "invalid"; fieldErrors: Record<string, string> }
   | { kind: "not_on_list" }
   | { kind: "already_booked" }
@@ -50,7 +50,7 @@ export type BookingResult =
   | { kind: "error"; message: string };
 
 export function authorizationText(deal: { vendor: { name: string } }) {
-  return `By saving your card, you authorize Pavilion to charge it the final group price (plus any add-ons) after ${deal.vendor.name} completes the job. You won't be charged today.`;
+  return `By booking, you agree to the booking terms and authorize Pavilion to charge your card the final group price (plus any add-ons) after ${deal.vendor.name} completes the job. You won't be charged today.`;
 }
 
 /** Finds the community address for typed input. Falls back to the street without a unit for single-family lists. */
@@ -65,10 +65,10 @@ async function findAddress(communityId: string, street: string, unit: string) {
 }
 
 /**
- * Starts a booking: validates eligibility and capacity, holds a spot, and returns the
- * card-saving checkout URL. The booking becomes "booked" once the card is saved.
+ * Step 1 of booking: validates eligibility and capacity, holds a spot, and returns a
+ * SetupIntent for the browser to save the card with. Step 2 is finalizeBooking.
  */
-export async function startBooking(slug: string, raw: unknown, attribution: { src?: string | null; ref?: string | null }): Promise<BookingResult> {
+export async function prepareBooking(slug: string, raw: unknown, attribution: { src?: string | null; ref?: string | null }): Promise<BookingResult> {
   const parsed = bookingSchema.safeParse(raw);
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {};
@@ -156,22 +156,12 @@ export async function startBooking(slug: string, raw: unknown, attribution: { sr
     if (customerId !== resident.stripeCustomerId) {
       await db.resident.update({ where: { id: resident.id }, data: { stripeCustomerId: customerId } });
     }
-    const session = await p.createSetupSession({
-      bookingId: booking.id,
-      publicToken: booking.publicToken,
-      customerId,
-      dealTitle: `${deal.title} · ${deal.community.name}`,
-      successUrl: url(`/b/${booking.publicToken}?session_id={CHECKOUT_SESSION_ID}`),
-      cancelUrl: url(`/d/${deal.slug}?checkout=cancelled`),
-      expiresAt: new Date(now.getTime() + config.holdMinutes * 60_000),
-      authorizationText: authorizationText(deal),
-    });
-    await db.booking.update({ where: { id: booking.id }, data: { stripeCheckoutId: session.id } });
-    return { kind: "redirect", url: session.url };
+    const intent = await p.createSetupIntent({ bookingId: booking.id, customerId, description: `${deal.title} · ${deal.community.name}` });
+    return { kind: "ready", token: booking.publicToken, clientSecret: intent.clientSecret };
   } catch (err) {
-    console.error("[booking] could not start checkout", err);
+    console.error("[booking] could not start card setup", err);
     await db.booking.update({ where: { id: booking.id }, data: { status: "expired" } });
-    return { kind: "error", message: "We couldn't open the secure card page. Please try again." };
+    return { kind: "error", message: "We couldn't connect to our card processor. Please try again." };
   }
 }
 
@@ -280,12 +270,36 @@ export async function confirmBooking(bookingId: string, card: SavedCard): Promis
   return "booked";
 }
 
-/** Called from the success redirect so local dev works without webhook forwarding. */
-export async function syncSetupSession(sessionId: string) {
+/**
+ * Step 2 of booking, called by the browser once the card is saved. `ref` is the
+ * SetupIntent id, or in mock mode the chosen test card. Stripe's webhook runs the
+ * same confirmation, so whichever arrives first wins.
+ */
+export async function finalizeBooking(token: string, ref: string): Promise<{ ok: true } | { ok: false; message: string }> {
+  const booking = await db.booking.findUnique({ where: { publicToken: token } });
+  if (!booking) return { ok: false, message: "We couldn't find that booking." };
+  const p = payments();
+
+  if (p.mode === "mock") {
+    const card = MOCK_CARDS[ref as keyof typeof MOCK_CARDS];
+    if (!card) return { ok: false, message: "Pick a test card." };
+    await confirmBooking(booking.id, { paymentMethodId: ref, brand: card.brand, last4: card.last4 });
+    return { ok: true };
+  }
+
+  const si = await p.retrieveSetupIntent(ref);
+  if (si.bookingId !== booking.id) return { ok: false, message: "That card doesn't belong to this booking." };
+  if (si.status !== "succeeded") return { ok: false, message: "Your card wasn't saved. Please try again." };
+  await confirmBooking(booking.id, si.card);
+  return { ok: true };
+}
+
+/** Used by the webhook and by the 3D Secure return redirect. */
+export async function syncSetupIntent(setupIntentId: string) {
   const p = payments();
   if (p.mode !== "stripe") return;
-  const s = await p.retrieveSetupSession(sessionId);
-  if (s.status === "complete" && s.bookingId) await confirmBooking(s.bookingId, s.card);
+  const si = await p.retrieveSetupIntent(setupIntentId);
+  if (si.status === "succeeded" && si.bookingId) await confirmBooking(si.bookingId, si.card);
 }
 
 export async function cancelBooking(bookingId: string, by: "resident" | "admin"): Promise<{ ok: true } | { ok: false; message: string }> {

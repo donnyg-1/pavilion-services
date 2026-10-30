@@ -9,11 +9,12 @@ import { url } from "@/lib/config";
 import { formatDeadline, formatServiceDate } from "@/lib/dates";
 import { residentCanCancel } from "@/lib/domain/capacity";
 import { formatCents } from "@/lib/domain/money";
-import { syncSetupSession } from "@/lib/services/booking";
+import { syncSetupIntent } from "@/lib/services/booking";
 import { syncPaymentSession } from "@/lib/services/charging";
 import { bookingAddress, bookingInclude, countBookings, dealInclude, fillCopy, lockDealIfDue, viewDeal } from "@/lib/services/deals";
 import { CancelBooking } from "./cancel";
 import { ShareBox } from "./share";
+import { NotesEditor } from "./notes";
 
 export const metadata: Metadata = { title: "Your booking", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -24,9 +25,9 @@ export default async function BookingPage({ params, searchParams }: Props) {
   const { token } = await params;
   const sp = await searchParams;
 
-  // Stripe redirects here after the card is saved / payment made. Sync now so the page is
-  // right even if the webhook hasn't arrived yet (or isn't forwarded in local dev).
-  if (sp.session_id) await syncSetupSession(sp.session_id).catch((e) => console.error(e));
+  // Stripe sends people here after a bank check (3D Secure) or a recovery payment. Sync now
+  // so the page is right even if the webhook hasn't arrived (or isn't forwarded in local dev).
+  if (sp.setup_intent) await syncSetupIntent(sp.setup_intent).catch((e) => console.error(e));
   if (sp.paid_session) await syncPaymentSession(sp.paid_session).catch((e) => console.error(e));
 
   const found = await db.booking.findUnique({ where: { publicToken: token }, include: { ...bookingInclude, charges: { orderBy: { createdAt: "desc" }, take: 1 } } });
@@ -45,7 +46,7 @@ export default async function BookingPage({ params, searchParams }: Props) {
       case "pending_setup":
         return { icon: "clock" as const, tone: "bg-honey-50 text-[#8a6418]", title: "Almost there", sub: "We're waiting to hear back from the card page. This usually takes a few seconds." };
       case "booked":
-        return { icon: "check" as const, tone: "bg-pine-100 text-pine-700", title: sp.session_id || sp.new ? "You're booked!" : "You're booked", sub: `${deal.vendor.name} will be at your home ${formatServiceDate(deal.serviceDate)}. Your card is saved, not charged.` };
+        return { icon: "check" as const, tone: "bg-pine-100 text-pine-700", title: sp.setup_intent || sp.new ? "You're booked!" : "You're booked", sub: `${deal.vendor.name} will be at your home ${formatServiceDate(deal.serviceDate)}. Your card is saved, not charged.` };
       case "completed":
         return { icon: "clock" as const, tone: "bg-sage-100 text-pine-700", title: "Job complete", sub: "We're processing your payment now." };
       case "charged":
@@ -116,9 +117,16 @@ export default async function BookingPage({ params, searchParams }: Props) {
                   </dd>
                 </div>
               ))}
-              {booking.notes ? (
+              {booking.status === "booked" ? (
                 <>
-                  <dt className="text-muted">Notes</dt>
+                  <dt className="text-muted">Crew notes</dt>
+                  <dd>
+                    <NotesEditor token={token} initial={booking.notes} />
+                  </dd>
+                </>
+              ) : booking.notes ? (
+                <>
+                  <dt className="text-muted">Crew notes</dt>
                   <dd className="whitespace-pre-line">{booking.notes}</dd>
                 </>
               ) : null}

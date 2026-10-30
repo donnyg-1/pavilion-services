@@ -1,5 +1,5 @@
 // Mock payments for local click-through without Stripe keys.
-// The mock checkout pages (/mock-checkout/*) save one of these test cards:
+// The booking form shows these test cards in place of Stripe's card field:
 //   pm_mock_ok      → charges succeed
 //   pm_mock_auth    → off-session charge needs authentication (like Stripe's 3DS test card)
 //   pm_mock_decline → off-session charge is declined
@@ -21,13 +21,13 @@ export const mockPayments: Payments = {
     return r.stripeCustomerId ?? `cus_mock_${r.id}`;
   },
 
-  async createSetupSession(input) {
-    return { id: `cs_mock_${input.bookingId}`, url: `/mock-checkout/setup/${input.publicToken}` };
+  async createSetupIntent(input) {
+    return { id: `seti_mock_${input.bookingId}`, clientSecret: `mock_secret_${input.bookingId}` };
   },
 
-  async retrieveSetupSession() {
-    // The mock checkout page confirms bookings directly, so there's nothing to look up.
-    return { status: "open", bookingId: null };
+  async retrieveSetupIntent() {
+    // Mock bookings are confirmed directly by finalizeBooking with the chosen test card.
+    return { status: "pending", bookingId: null };
   },
 
   async chargeOffSession(input) {

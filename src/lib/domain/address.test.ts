@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addressKey, normalizeAddress, routeSortKey } from "./address";
+import { addressKey, matchesPartial, normalizeAddress, routeSortKey } from "./address";
 
 describe("normalizeAddress: Utah grid addresses", () => {
   const expected = "1234 N 500 E";
@@ -74,5 +74,19 @@ describe("routeSortKey", () => {
       return sa === sb ? na - nb : sa.localeCompare(sb);
     });
     expect(sorted).toEqual(["1234 N 500 E", "1300 N 500 E", "88 W WILLOW CRK DR"]);
+  });
+});
+
+describe("matchesPartial", () => {
+  const key = "1300 N 500 E";
+  it.each(["13", "1300", "1300 n", "1300 No", "1300 north", "1300 North 5", "1300 n. 500 east", "1300 N 500 E"])("matches %j", (typed) => {
+    expect(matchesPartial(key, typed)).toBe(true);
+  });
+  it.each(["", "14", "1300 S", "1300 N 6", "1300 N 500 E 9", "Main"])("rejects %j", (typed) => {
+    expect(matchesPartial(key, typed)).toBe(false);
+  });
+  it("handles named streets", () => {
+    expect(matchesPartial("88 W WILLOW CRK DR", "88 west willow cr")).toBe(true);
+    expect(matchesPartial("88 W WILLOW CRK DR", "88 w willow creek dr")).toBe(true);
   });
 });

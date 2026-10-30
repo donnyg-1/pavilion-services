@@ -117,3 +117,25 @@ export function routeSortKey(normalizedKey: string): [string, number] {
   const [num, ...rest] = normalizedKey.split(" ");
   return [rest.join(" "), parseInt(num, 10) || 0];
 }
+
+const EXPANSIONS: Record<string, string[]> = {};
+for (const [word, abbr] of [...Object.entries(DIRECTIONS), ...Object.entries(SUFFIXES)]) {
+  (EXPANSIONS[abbr] ??= [abbr]).push(word);
+}
+
+/**
+ * Whether a half-typed address could be this address, for suggestions. Each typed word
+ * must start the matching word of the key, either as abbreviated or spelled out:
+ * "1300 nor" and "1300 n 5" both match "1300 N 500 E".
+ */
+export function matchesPartial(normalizedKey: string, input: string): boolean {
+  const typed = (input ?? "").toUpperCase().split(",")[0].replace(/[.']/g, "").replace(/[^A-Z0-9# -]/g, " ").trim().split(/\s+/).filter(Boolean);
+  if (typed.length === 0) return false;
+  const key = normalizedKey.split(" ");
+  if (typed.length > key.length) return false;
+  return typed.every((t, i) => {
+    const k = key[i];
+    const word = t.replace(/^(\d+)(ST|ND|RD|TH)$/, "$1");
+    return (EXPANSIONS[k] ?? [k]).some((form) => form.startsWith(word));
+  });
+}

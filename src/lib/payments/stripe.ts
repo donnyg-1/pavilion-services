@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { estimateStripeFeeCents } from "@/lib/domain/ledger";
-import type { ChargeResult, Payments, PaymentSessionResult, SetupSessionResult } from "./index";
+import type { ChargeResult, Payments, PaymentSessionResult, SetupIntentResult } from "./index";
 
 let client: Stripe | null = null;
 
@@ -41,29 +41,22 @@ export function stripePayments(): Payments {
       return c.id;
     },
 
-    async createSetupSession(input) {
-      const session = await s.checkout.sessions.create({
-        mode: "setup",
+    async createSetupIntent(input) {
+      const si = await s.setupIntents.create({
         customer: input.customerId,
+        usage: "off_session",
         allowed_payment_method_types: ["card"],
-        currency: "usd",
-        success_url: input.successUrl,
-        cancel_url: input.cancelUrl,
-        expires_at: Math.floor(input.expiresAt.getTime() / 1000),
-        client_reference_id: input.bookingId,
-        metadata: { bookingId: input.bookingId, kind: "booking_setup" },
-        setup_intent_data: { metadata: { bookingId: input.bookingId }, description: input.dealTitle },
-        custom_text: { submit: { message: input.authorizationText } },
+        description: input.description,
+        metadata: { bookingId: input.bookingId },
       });
-      return { id: session.id, url: session.url! };
+      return { id: si.id, clientSecret: si.client_secret! };
     },
 
-    async retrieveSetupSession(id): Promise<SetupSessionResult> {
-      const session = await s.checkout.sessions.retrieve(id, { expand: ["setup_intent.payment_method"] });
-      const bookingId = session.metadata?.bookingId ?? session.client_reference_id ?? null;
-      if (session.status !== "complete") return { status: session.status === "expired" ? "expired" : "open", bookingId };
-      const si = session.setup_intent as Stripe.SetupIntent;
-      return { status: "complete", bookingId, card: cardFrom(si.payment_method as Stripe.PaymentMethod) };
+    async retrieveSetupIntent(id): Promise<SetupIntentResult> {
+      const si = await s.setupIntents.retrieve(id, { expand: ["payment_method"] });
+      const bookingId = si.metadata?.bookingId ?? null;
+      if (si.status !== "succeeded") return { status: "pending", bookingId };
+      return { status: "succeeded", bookingId, card: cardFrom(si.payment_method as Stripe.PaymentMethod) };
     },
 
     async chargeOffSession(input): Promise<ChargeResult> {

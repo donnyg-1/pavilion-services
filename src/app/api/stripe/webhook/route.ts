@@ -1,11 +1,10 @@
 import type Stripe from "stripe";
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
 import { stripe } from "@/lib/payments/stripe";
-import { syncSetupSession } from "@/lib/services/booking";
+import { syncSetupIntent } from "@/lib/services/booking";
 import { syncPaymentSession } from "@/lib/services/charging";
 
-// Stripe → Pavilion. Every handler is idempotent; the success redirects call the same code.
+// Stripe → Pavilion. Every handler is idempotent; the browser and redirects call the same code.
 export async function POST(req: Request) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!process.env.STRIPE_SECRET_KEY || !secret) return NextResponse.json({ error: "Stripe not configured" }, { status: 400 });
@@ -19,18 +18,14 @@ export async function POST(req: Request) {
 
   try {
     switch (event.type) {
-      case "checkout.session.completed": {
-        const s = event.data.object as Stripe.Checkout.Session;
-        if (s.mode === "setup") await syncSetupSession(s.id);
-        if (s.mode === "payment") await syncPaymentSession(s.id);
+      case "setup_intent.succeeded": {
+        await syncSetupIntent((event.data.object as Stripe.SetupIntent).id);
         break;
       }
-      case "checkout.session.expired": {
+      case "checkout.session.completed": {
+        // Recovery payments for failed charges still use Stripe's hosted page.
         const s = event.data.object as Stripe.Checkout.Session;
-        const bookingId = s.metadata?.bookingId;
-        if (s.mode === "setup" && bookingId) {
-          await db.booking.updateMany({ where: { id: bookingId, status: "pending_setup" }, data: { status: "expired" } });
-        }
+        if (s.mode === "payment") await syncPaymentSession(s.id);
         break;
       }
     }

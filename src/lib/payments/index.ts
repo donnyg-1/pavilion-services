@@ -5,22 +5,11 @@ import { config } from "@/lib/config";
 import { stripePayments } from "./stripe";
 import { mockPayments } from "./mock";
 
-export type SetupSessionInput = {
-  bookingId: string;
-  publicToken: string;
-  customerId: string;
-  dealTitle: string;
-  successUrl: string;
-  cancelUrl: string;
-  expiresAt: Date;
-  authorizationText: string;
-};
-
 export type SavedCard = { paymentMethodId: string; brand: string | null; last4: string | null };
 
-export type SetupSessionResult =
-  | { status: "complete"; bookingId: string | null; card: SavedCard }
-  | { status: "open" | "expired"; bookingId: string | null };
+export type SetupIntentResult =
+  | { status: "succeeded"; bookingId: string | null; card: SavedCard }
+  | { status: "pending"; bookingId: string | null };
 
 export type ChargeInput = {
   chargeId: string;
@@ -43,8 +32,9 @@ export type PaymentSessionResult =
 export interface Payments {
   mode: "stripe" | "mock";
   ensureCustomer(r: { id: string; email: string; name: string; phone: string; stripeCustomerId: string | null }): Promise<string>;
-  createSetupSession(input: SetupSessionInput): Promise<{ id: string; url: string }>;
-  retrieveSetupSession(id: string): Promise<SetupSessionResult>;
+  /** Saves a card for later off-session charges. The browser confirms it with Stripe Elements. */
+  createSetupIntent(input: { bookingId: string; customerId: string; description: string }): Promise<{ id: string; clientSecret: string }>;
+  retrieveSetupIntent(id: string): Promise<SetupIntentResult>;
   chargeOffSession(input: ChargeInput): Promise<ChargeResult>;
   /** A Checkout page for a failed off-session charge (decline or card needs authentication). */
   createPaymentSession(input: {

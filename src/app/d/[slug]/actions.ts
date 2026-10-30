@@ -1,26 +1,18 @@
 "use server";
 
-import { redirect } from "next/navigation";
-import { joinWaitlist, requestAddressReview, startBooking, type BookingResult } from "@/lib/services/booking";
+import { db } from "@/lib/db";
+import { config } from "@/lib/config";
+import { finalizeBooking, joinWaitlist, prepareBooking, requestAddressReview, type BookingResult } from "@/lib/services/booking";
 
 export type Contact = { name: string; email: string; phone: string; street: string; unit: string };
+export type BookingInput = Contact & { notes: string; addOnIds: string[] };
 
-export type BookingFormState = { result: BookingResult | null; at: number };
+export async function prepare(slug: string, input: BookingInput, attribution: { src: string | null; ref: string | null }): Promise<BookingResult> {
+  return prepareBooking(slug, input, attribution);
+}
 
-export async function submitBooking(slug: string, _prev: BookingFormState, formData: FormData): Promise<BookingFormState> {
-  const raw = {
-    name: formData.get("name"),
-    email: formData.get("email"),
-    phone: formData.get("phone"),
-    street: formData.get("street"),
-    unit: formData.get("unit") ?? "",
-    notes: formData.get("notes") ?? "",
-    addOnIds: formData.getAll("addOn").map(String),
-    agreed: formData.get("agreed") === "on",
-  };
-  const result = await startBooking(slug, raw, { src: formData.get("src") as string | null, ref: formData.get("ref") as string | null });
-  if (result.kind === "redirect") redirect(result.url);
-  return { result, at: Date.now() };
+export async function finalize(token: string, ref: string) {
+  return finalizeBooking(token, ref);
 }
 
 export async function submitWaitlist(slug: string, contact: Contact, src: string | null, ref: string | null) {
@@ -29,4 +21,18 @@ export async function submitWaitlist(slug: string, contact: Contact, src: string
 
 export async function submitReview(slug: string, contact: Contact) {
   return requestAddressReview(slug, contact);
+}
+
+/** Mock mode only: what a phone wallet would hand over, using an address that's still free. */
+export async function mockWalletIdentity(slug: string): Promise<Contact | null> {
+  if (config.paymentsMode() !== "mock") return null;
+  const deal = await db.deal.findUnique({ where: { slug } });
+  if (!deal) return null;
+  const free = await db.communityAddress.findFirst({
+    where: { communityId: deal.communityId, active: true, bookings: { none: { dealId: deal.id, status: { in: ["pending_setup", "booked", "completed", "charged", "failed"] } } } },
+    orderBy: { normalized: "desc" },
+  });
+  if (!free) return null;
+  const n = Math.floor(Math.random() * 9000) + 1000;
+  return { name: "Jamie Wallet", email: `jamie.wallet.${n}@example.com`, phone: `(801) 555-${n}`, street: free.raw, unit: "" };
 }

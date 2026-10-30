@@ -21,7 +21,7 @@ npm run dev
 
 With no Stripe or Resend keys, the app runs in **mock mode**:
 
-- **Payments:** a stand-in checkout page lets you pick a test card that succeeds, gets declined later, or needs authentication later.
+- **Payments:** a "test wallet" button stands in for Apple Pay / Google Pay, and three test cards stand in for Stripe's card field: one that succeeds, one that gets declined later, and one that needs bank approval later.
 - **Email:** emails go to the admin **Outbox** (`/admin/outbox`), where you can read each one exactly as a resident would see it.
 
 The admin header always shows which mode you're in.
@@ -29,39 +29,41 @@ The admin header always shows which mode you're in.
 ### Click through the whole flow
 
 1. Open `/d/gutter-day?src=flyer`. The seed data has 3 homes booked, so it shows "2 more → $149".
-2. Book `1300 North 500 East`. Messy spellings match `1300 N 500 E` on the list. Try `999 Nowhere St` to see "Not on the list? Request review".
-3. On the confirmation page, copy the share link and book a second home with it. That booking counts as a neighbor referral.
-4. Book a few more homes and choose the "declined" and "needs authentication" test cards for some of them.
-5. Admin → Gutter Day → **Close signups now**. This locks the price and emails everyone their final price.
-6. Bookings tab → select all → **Complete & charge selected**. Successful charges send receipts. Failed charges email the resident a payment link (open it from the Outbox).
-7. Refund one booking, then look at the **Ledger** tab and export it.
-8. Overview → **Move & notify** to reschedule everyone to the rain date.
-9. Click a 1–5 link in a receipt email to leave a rating.
+2. Tap **Book with test wallet**. That's the one-tap path Apple Pay and Google Pay users get.
+3. Or fill in the form: type `1300 nor` in the street field and pick `1300 N 500 E` from the suggestions. Try `999 Nowhere St` to see "Not on the list? Request review".
+4. On the confirmation page, copy the share link and book another home with it. That booking counts as a neighbor referral. Wallet bookers can add a gate code there too.
+5. Book a few more homes and choose the "declined later" and "bank approval needed later" test cards for some of them.
+6. Admin → Gutter Day → **Close signups now**. This locks the price and emails everyone their final price.
+7. Bookings tab → select all → **Complete & charge selected**. Successful charges send receipts. Failed charges email the resident a payment link (open it from the Outbox).
+8. Refund one booking, then look at the **Ledger** tab and export it.
+9. Overview → **Move & notify** to reschedule everyone to the rain date.
+10. Click a 1–5 link in a receipt email to leave a rating.
 
 ## Tests
 
 ```bash
 npm test                    # unit tests: pricing tiers, capacity/waitlist, address matching, charge/ledger math, CSV
 npm run db:reset            # fresh seed data (the e2e test needs signups open)
-npm run test:e2e            # browser test: book → close signups → charge → ledger (mock mode)
+npm run test:e2e            # browser tests: one-tap wallet booking; form booking → close signups → charge → ledger (mock mode)
 ```
 
 ## Real Stripe (test mode)
 
-1. In the Stripe dashboard (test mode), copy the secret key into `STRIPE_SECRET_KEY`.
+1. In the Stripe dashboard (test mode), copy the secret key into `STRIPE_SECRET_KEY` and the publishable key into `STRIPE_PUBLISHABLE_KEY`.
 2. Forward webhooks locally with the [Stripe CLI](https://stripe.com/docs/stripe-cli):
    ```bash
    stripe listen --forward-to localhost:3000/api/stripe/webhook
    ```
-   Put the `whsec_…` it prints into `STRIPE_WEBHOOK_SECRET`. (The success redirects also sync with Stripe, so bookings confirm even without the webhook. The webhook is the safety net.)
+   Put the `whsec_…` it prints into `STRIPE_WEBHOOK_SECRET`. The browser also confirms bookings directly, so the webhook is a safety net.
 3. Reseed. Sample bookings are only created in mock mode, because they don't have real saved cards.
-4. Test cards: `4242 4242 4242 4242` (succeeds), `4000 0027 6000 3184` (needs authentication when charged later), `4000 0000 0000 0341` (saves fine, declined when charged later).
+4. Test cards go straight into the card field on the deal page: `4242 4242 4242 4242` (succeeds), `4000 0027 6000 3184` (needs authentication when charged later), `4000 0000 0000 0341` (saves fine, declined when charged later).
+5. **Apple Pay / Google Pay:** the button appears automatically on phones and browsers with a saved wallet. Apple Pay also needs the site's domain registered in the Stripe dashboard (Settings → Payment method domains). That works with a `*.vercel.app` address for the pilot. Google Pay needs no setup.
 
 How payments work:
 
-- **Booking:** Stripe Checkout in setup mode saves the card. Nothing is charged.
+- **Booking:** the browser saves the card with Stripe's embedded fields (a SetupIntent, usage off-session). Residents never leave the page and nothing is charged.
 - **Mark complete:** an off-session PaymentIntent charges the locked price plus add-ons.
-- **Declines and authentication:** the resident is emailed a link that opens a fresh Checkout payment page.
+- **Declines and authentication:** the resident is emailed a link that opens a fresh Stripe Checkout payment page.
 - **Ledger:** uses Stripe's actual processing fee from the balance transaction. In mock mode the fee is estimated at 2.9% + 30¢.
 
 ## Email (Resend)
@@ -74,7 +76,7 @@ Set `RESEND_API_KEY` and `EMAIL_FROM`. Until you verify a sending domain in Rese
 2. Set every variable from `.env.example` in Vercel. Set `APP_URL` to the deployed URL.
 3. Run `npx prisma migrate deploy` against the production database, then seed or create real data in the admin.
 4. `vercel.json` schedules `/api/cron/daily` once a day (16:00 UTC, which is 9–10am Mountain). It sends the day-before reminders and locks any deal whose deadline passed. Deadlines also lock on the next page view, so nothing depends on cron timing. Vercel sends `CRON_SECRET` automatically.
-5. Add a Stripe webhook endpoint at `https://<your-app>/api/stripe/webhook` for `checkout.session.completed` and `checkout.session.expired`.
+5. Add a Stripe webhook endpoint at `https://<your-app>/api/stripe/webhook` for `setup_intent.succeeded` and `checkout.session.completed`, and register the domain for Apple Pay.
 
 ## How the rules are implemented
 
@@ -83,7 +85,7 @@ Set `RESEND_API_KEY` and `EMAIL_FROM`. Until you verify a sending domain in Rese
 | Price only drops; tiers unlock off the **peak** booked count, so cancellations never raise it | `src/lib/domain/pricing.ts` |
 | Tier locks at the deadline (`lockDealIfDue`, idempotent, runs on page views and cron) | `src/lib/services/deals.ts` |
 | Capacity, waitlist, and holding a spot during card entry (row lock per deal, so the last spot can't be double-booked) | `src/lib/domain/capacity.ts`, `src/lib/services/booking.ts` |
-| Address normalization for Utah grid and named streets | `src/lib/domain/address.ts` |
+| Address normalization for Utah grid and named streets, plus suggestions from the community list (`/api/addresses`, only after a house number is typed, max 5 results) | `src/lib/domain/address.ts` |
 | Commission / manager / HOA / processing / vendor math, refunds | `src/lib/domain/ledger.ts` |
 | Attribution (`?src=manager\|board\|facebook\|flyer`, `?ref=CODE`), first-touch visit tracking for conversion | `src/app/d/[slug]/attribution.tsx`, `src/app/api/visit` |
 
@@ -104,7 +106,7 @@ src/lib/domain/             pure business rules + unit tests
 src/lib/services/           booking, charging, admin operations (DB + Stripe + email)
 src/lib/payments/           Stripe adapter and mock adapter
 src/lib/email/              Resend sender (logs to Outbox) and templates
-src/app/d/[slug]            resident deal page, booking form, terms
+src/app/d/[slug]            resident deal page, booking form (wallet, card, address suggestions), terms
 src/app/b/[token]           confirmation / manage / cancel / pay / calendar
 src/app/r/[token]           one-tap rating
 src/app/admin               staff admin
