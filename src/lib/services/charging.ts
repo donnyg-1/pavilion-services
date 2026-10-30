@@ -1,12 +1,12 @@
 import { db } from "@/lib/db";
 import { url } from "@/lib/config";
 import { computeChargeLedger, computeRefundLedger, type LedgerAmounts } from "@/lib/domain/ledger";
-import { bookingTotalCents } from "@/lib/domain/pricing";
+import { bookingTotalCents, referralCreditCents } from "@/lib/domain/pricing";
 import { formatCents } from "@/lib/domain/money";
 import { sendEmail } from "@/lib/email/send";
 import * as T from "@/lib/email/templates";
 import { payments } from "@/lib/payments";
-import { bookingContext, bookingInclude, dealContext, dealInclude, lockDealIfDue } from "./deals";
+import { bookingContext, bookingInclude, dealContext, dealInclude, lockDealIfDue, referralStatus } from "./deals";
 
 type Result = { ok: true; message: string } | { ok: false; message: string };
 
@@ -29,12 +29,17 @@ export async function completeAndCharge(bookingId: string): Promise<Result> {
   if (booking.status !== "booked") return { ok: false, message: `This booking is ${booking.status}, not booked.` };
   if (!booking.stripePaymentMethodId || !booking.resident.stripeCustomerId) return { ok: false, message: "No saved card on this booking." };
 
-  const amountCents = bookingTotalCents(deal.lockedPriceCents, booking.addOns.map((a) => a.priceCents));
+  // Neighbors who booked with this home's link earn it a credit, split by everyone
+  // (it comes off the price the card is charged, and every share is figured on that).
+  const jobTotalCents = bookingTotalCents(deal.lockedPriceCents, booking.addOns.map((a) => a.priceCents));
+  const { referrals } = await referralStatus(deal, booking.id);
+  const creditCents = referralCreditCents({ referrals, perReferralCents: deal.referralCreditCents, capCents: deal.referralCreditCapCents, jobTotalCents });
+  const amountCents = jobTotalCents - creditCents;
 
   // Claim the booking so a double-click can't charge twice.
   const claimed = await db.booking.updateMany({ where: { id: booking.id, status: "booked" }, data: { status: "completed", completedAt: new Date() } });
   if (claimed.count === 0) return { ok: false, message: "This booking is already being charged." };
-  const charge = await db.charge.create({ data: { bookingId: booking.id, amountCents } });
+  const charge = await db.charge.create({ data: { bookingId: booking.id, amountCents, referralCreditCents: creditCents } });
 
   return attemptCharge(charge.id);
 }
@@ -48,7 +53,7 @@ export async function retryCharge(bookingId: string): Promise<Result> {
   const last = booking.charges[0];
   const claimed = await db.booking.updateMany({ where: { id: booking.id, status: "failed" }, data: { status: "completed" } });
   if (claimed.count === 0) return { ok: false, message: "This booking is already being charged." };
-  const charge = await db.charge.create({ data: { bookingId: booking.id, amountCents: last.amountCents } });
+  const charge = await db.charge.create({ data: { bookingId: booking.id, amountCents: last.amountCents, referralCreditCents: last.referralCreditCents } });
   return attemptCharge(charge.id);
 }
 
@@ -102,7 +107,7 @@ export async function recordChargeSuccess(chargeId: string, p: { paymentIntentId
     await tx.charge.update({ where: { id: chargeId }, data: { status: "succeeded", stripePaymentIntentId: p.paymentIntentId, failureCode: null, failureMessage: null } });
     await tx.booking.update({ where: { id: charge.bookingId }, data: { status: "charged", completedAt: charge.booking.completedAt ?? new Date() } });
     await tx.ledgerEntry.create({
-      data: { dealId: deal.id, bookingId: charge.bookingId, chargeId, type: "charge", stripeRefId: p.paymentIntentId, feeIsEstimate: p.feeIsEstimate, ...amounts, ...rates },
+      data: { dealId: deal.id, bookingId: charge.bookingId, chargeId, type: "charge", stripeRefId: p.paymentIntentId, feeIsEstimate: p.feeIsEstimate, referralCreditCents: charge.referralCreditCents, ...amounts, ...rates },
     });
     return true;
   });
@@ -118,7 +123,8 @@ export async function recordChargeSuccess(chargeId: string, p: { paymentIntentId
     bookingId: booking.id,
     dedupeKey: `receipt:${chargeId}`,
     ...T.receipt(dealContext(deal), bookingContext(deal, booking), {
-      basePriceCents: charge.amountCents - addOnTotal,
+      basePriceCents: charge.amountCents + charge.referralCreditCents - addOnTotal,
+      referralCreditCents: charge.referralCreditCents,
       totalCents: charge.amountCents,
       card: booking.cardLast4 ? `${(booking.cardBrand ?? "Card").replace(/^\w/, (c) => c.toUpperCase())} ending ${booking.cardLast4}` : "Card on file",
       ratingUrl: (n) => url(`/r/${booking.publicToken}?score=${n}`),

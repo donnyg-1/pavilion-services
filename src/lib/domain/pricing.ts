@@ -75,3 +75,23 @@ export function tierUnlockedBetween<T extends Tier>(tiers: T[], before: number, 
 export function bookingTotalCents(basePriceCents: number, addOnPricesCents: number[]): number {
   return addOnPricesCents.reduce((sum, p) => sum + p, basePriceCents);
 }
+
+/** Stripe won't charge less than this, so a referral credit always leaves at least 50¢. */
+export const MIN_CHARGE_CENTS = 50;
+
+/**
+ * Referral credit for a home: per-referral amount × neighbors who booked with its link,
+ * capped per home, and never more than the job itself.
+ */
+export function referralCreditCents(input: { referrals: number; perReferralCents: number; capCents: number; jobTotalCents: number }): number {
+  const { referrals, perReferralCents, capCents, jobTotalCents } = input;
+  if (referrals <= 0 || perReferralCents <= 0) return 0;
+  const earned = Math.min(referrals * perReferralCents, Math.max(0, capCents));
+  return Math.max(0, Math.min(earned, jobTotalCents - MIN_CHARGE_CENTS));
+}
+
+/** How many more referrals still earn credit before the cap. */
+export function referralsUntilCap(referrals: number, perReferralCents: number, capCents: number): number {
+  if (perReferralCents <= 0) return 0;
+  return Math.max(0, Math.ceil(capCents / perReferralCents) - referrals);
+}

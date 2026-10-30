@@ -132,6 +132,14 @@ export default async function DealPage({ params, searchParams }: Props) {
               <>
                 <h2 className="text-2xl font-bold">{v.isFull ? "Join the waitlist" : "Book your home"}</h2>
                 <p className="mt-1 mb-5 text-muted">For {deal.community.name} homes only. Takes about a minute.</p>
+                {ref && deal.referralCreditCents > 0 ? (
+                  <div className="mb-5 flex items-start gap-3 rounded-xl bg-pine-100/70 px-4 py-3 text-[15px] text-pine-900">
+                    <Icon name="users" className="mt-0.5 size-5 shrink-0 text-pine-700" />
+                    <p>
+                      A neighbor sent you this link. When you book, they get {formatCents(deal.referralCreditCents)} off their job, and you get your own link to do the same.
+                    </p>
+                  </div>
+                ) : null}
                 <BookingForm
                   slug={slug}
                   communityName={deal.community.name}
@@ -223,6 +231,9 @@ export default async function DealPage({ params, searchParams }: Props) {
               ["What if it rains?", deal.backupDate ? `We'll move to the backup date, ${formatServiceDate(deal.backupDate)}, and email everyone.` : "We'll pick a new date with the crew and email everyone."],
               ["Do I need to be home?", "No. Just unlock side gates and keep pets inside. Leave the crew a note when you book."],
               ["Can I cancel?", fillCopy(deal.cancellationPolicy, deal)],
+              ...(deal.referralCreditCents > 0
+                ? [["Do I get anything for inviting neighbors?", `Yes. After you book, you get your own link. Every neighbor who books with it takes ${formatCents(deal.referralCreditCents)} off your job, up to ${formatCents(deal.referralCreditCapCents)}. The credit comes off when your card is charged after the work is done.`]]
+                : []),
               ["Who is Pavilion?", `Pavilion partners with HOA communities to bring residents vetted local service companies at group prices. ${deal.vendor.name} does the work; Pavilion handles booking and payment.`],
             ].map(([q, a]) => (
               <details key={q} className="group px-4 py-3.5 [&_summary::-webkit-details-marker]:hidden">

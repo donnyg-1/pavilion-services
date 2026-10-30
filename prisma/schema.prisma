@@ -108,6 +108,12 @@ model Deal {
   hoaShareBps         Int        @default(300)
   shareBasis          ShareBasis @default(price)
 
+  // Referral reward: the referrer gets this much off their own job for each neighbor who
+  // books with their link (and is still booked when charged), up to the cap. 0 turns it off.
+  // It comes off the price charged, so everyone's share (commission, HOA, manager, vendor) shrinks with it.
+  referralCreditCents    Int     @default(500)
+  referralCreditCapCents Int     @default(2500)
+
   // Copy that varies per deal. {community} is replaced with the community name.
   reserveFundLine     String     @default("A share of every booking goes to {community}'s reserve fund.")
   guaranteeLine       String     @default("If you're not happy, the crew comes back to make it right, or you get your money back.")
@@ -292,7 +298,8 @@ model Charge {
   id                    String        @id @default(cuid())
   bookingId             String
   booking               Booking       @relation(fields: [bookingId], references: [id])
-  amountCents           Int
+  amountCents           Int // what the card is charged, after any referral credit
+  referralCreditCents   Int           @default(0)
   status                ChargeStatus  @default(pending)
   stripePaymentIntentId String?       @unique
   failureCode           String?
@@ -336,6 +343,7 @@ model LedgerEntry {
   feeAbsorbedCents      Int          @default(0) // refunds: Stripe keeps its fee, Pavilion eats it
   vendorPayoutCents     Int
   feeIsEstimate         Boolean      @default(false)
+  referralCreditCents   Int          @default(0) // discount already taken off finalPrice, for reporting
 
   // Rates as they were at charge time
   commissionBps         Int

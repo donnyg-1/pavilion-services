@@ -57,6 +57,8 @@ export type DealFormData = {
   managerShare: string;
   hoaShare: string;
   shareBasis: "price" | "commission";
+  referralCredit: string; // dollars off per neighbor referred, "0" = off
+  referralCap: string; // max dollars off per home
   reserveFundLine: string;
   guaranteeLine: string;
   cancellationPolicy: string;
@@ -111,6 +113,12 @@ export async function saveDeal(dealId: string | null, data: DealFormData): Promi
   };
   errors.push(...validateRates(rates));
 
+  const referralCreditCents = parseDollars(data.referralCredit || "0");
+  const referralCreditCapCents = parseDollars(data.referralCap || "0");
+  if (referralCreditCents == null) errors.push("Referral credit must be a dollar amount (0 turns it off).");
+  if (referralCreditCapCents == null) errors.push("Referral cap must be a dollar amount.");
+  if (referralCreditCents && referralCreditCapCents != null && referralCreditCapCents < referralCreditCents) errors.push("The referral cap must be at least one referral's credit.");
+
   const clash = await db.deal.findUnique({ where: { slug } });
   if (clash && clash.id !== dealId) errors.push(`The link name "${slug}" is taken.`);
 
@@ -132,6 +140,8 @@ export async function saveDeal(dealId: string | null, data: DealFormData): Promi
     capacity,
     normalPriceCents: normalPriceCents!,
     ...rates,
+    referralCreditCents: referralCreditCents!,
+    referralCreditCapCents: referralCreditCapCents!,
     reserveFundLine: data.reserveFundLine.trim(),
     guaranteeLine: data.guaranteeLine.trim(),
     cancellationPolicy: data.cancellationPolicy.trim(),

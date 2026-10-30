@@ -214,6 +214,23 @@ export function DealForm({ dealId, initial, communities, vendors, hasBookings, l
 
       <Card className={section}>
         <div>
+          <h2 className="text-lg font-bold">Neighbor referrals</h2>
+          <p className="text-sm text-muted">
+            Each booked home gets a share link. Every neighbor who books with it takes this much off the referrer&apos;s job, up to the cap. The credit comes off the price charged, so the commission, HOA, manager and vendor shares all shrink with it. Set it to 0 to turn it off.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Credit per neighbor" htmlFor="referralCredit">
+            <DollarInput id="referralCredit" value={d.referralCredit} onChange={(v) => set("referralCredit", v)} />
+          </Field>
+          <Field label="Max credit per home" htmlFor="referralCap">
+            <DollarInput id="referralCap" value={d.referralCap} onChange={(v) => set("referralCap", v)} />
+          </Field>
+        </div>
+      </Card>
+
+      <Card className={section}>
+        <div>
           <h2 className="text-lg font-bold">Copy</h2>
           <p className="text-sm text-muted">Use {"{community}"} and {"{vendor}"} as placeholders.</p>
         </div>

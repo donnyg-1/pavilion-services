@@ -177,6 +177,7 @@ export async function dealStats(dealId: string) {
     totalVisitors,
     referralShare: totalBooked ? bookings.filter((b) => b.source === "referral").length / totalBooked : 0,
     money: sumLedger(ledgerRows as LedgerAmounts[]),
+    referralCreditsCents: ledgerRows.filter((r) => r.type === "charge").reduce((sum, r) => sum + r.referralCreditCents, 0),
     chargedCount: ledgerRows.filter((r) => r.type === "charge").length,
     ratings: {
       count: ratings.length,

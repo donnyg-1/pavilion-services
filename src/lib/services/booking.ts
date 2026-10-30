@@ -10,7 +10,7 @@ import * as T from "@/lib/email/templates";
 import { payments, type SavedCard } from "@/lib/payments";
 import { MOCK_CARDS } from "@/lib/payments/mock";
 import { publicToken, referralCode } from "@/lib/tokens";
-import { bookingContext, bookingInclude, countBookings, dealContext, dealInclude, lockDealIfDue, viewDeal, type DealFull } from "./deals";
+import { bookingContext, bookingInclude, countBookings, dealContext, dealInclude, lockDealIfDue, referralStatus, viewDeal, type DealFull } from "./deals";
 
 export const SOURCES = ["manager", "board", "facebook", "flyer"] as const;
 
@@ -254,6 +254,8 @@ export async function confirmBooking(bookingId: string, card: SavedCard): Promis
     ...T.bookingConfirmed(ctx, bookingContext(deal, booking), v.priceCents, v.next),
   });
 
+  await notifyReferrer(deal, booking);
+
   if (result.unlocked) {
     const others = await db.booking.findMany({ where: { dealId: deal.id, status: "booked", id: { not: bookingId } }, include: bookingInclude });
     for (const o of others) {
@@ -268,6 +270,24 @@ export async function confirmBooking(bookingId: string, card: SavedCard): Promis
     }
   }
   return "booked";
+}
+
+/** Tells the neighbor whose link was used that they earned credit (until they hit the cap). */
+async function notifyReferrer(deal: DealFull, booking: { id: string; referredById: string | null }) {
+  if (!booking.referredById || deal.referralCreditCents <= 0) return;
+  const referrer = await db.booking.findUnique({ where: { id: booking.referredById }, include: bookingInclude });
+  if (!referrer || referrer.status !== "booked") return;
+  const status = await referralStatus(deal, referrer.id);
+  // Already at the cap before this neighbor booked: nothing new earned, so no email.
+  if ((status.referrals - 1) * deal.referralCreditCents >= deal.referralCreditCapCents) return;
+  await sendEmail({
+    to: referrer.resident.email,
+    template: "referral_earned",
+    dealId: deal.id,
+    bookingId: referrer.id,
+    dedupeKey: `referral:${booking.id}`,
+    ...T.referralEarned(dealContext(deal), bookingContext(deal, referrer), status),
+  });
 }
 
 /**

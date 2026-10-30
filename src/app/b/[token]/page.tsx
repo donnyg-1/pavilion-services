@@ -11,7 +11,7 @@ import { residentCanCancel } from "@/lib/domain/capacity";
 import { formatCents } from "@/lib/domain/money";
 import { syncSetupIntent } from "@/lib/services/booking";
 import { syncPaymentSession } from "@/lib/services/charging";
-import { bookingAddress, bookingInclude, countBookings, dealInclude, fillCopy, lockDealIfDue, viewDeal } from "@/lib/services/deals";
+import { bookingAddress, bookingInclude, countBookings, dealInclude, fillCopy, lockDealIfDue, referralStatus, viewDeal } from "@/lib/services/deals";
 import { CancelBooking } from "./cancel";
 import { ShareBox } from "./share";
 import { NotesEditor } from "./notes";
@@ -37,6 +37,8 @@ export default async function BookingPage({ params, searchParams }: Props) {
   const deal = await db.deal.findUniqueOrThrow({ where: { id: booking.dealId }, include: dealInclude });
   const v = viewDeal(deal, await countBookings(db, deal.id));
   const addOnTotal = booking.addOns.reduce((s, a) => s + a.priceCents, 0);
+  const referral = await referralStatus(deal, booking.id);
+  const credit = Math.min(referral.earnedCents, Math.max(0, v.priceCents + addOnTotal - 50));
   const shareUrl = url(`/d/${deal.slug}?ref=${booking.referralCode}`);
   const canCancel = residentCanCancel(booking.status, deal.signupDeadline, new Date());
   const charge = booking.charges[0];
@@ -93,7 +95,7 @@ export default async function BookingPage({ params, searchParams }: Props) {
           </div>
         ) : null}
 
-        {booking.status === "booked" ? <ShareBox url={shareUrl} title={deal.title} communityName={deal.community.name} priceCents={v.priceCents} next={v.next} /> : null}
+        {booking.status === "booked" ? <ShareBox url={shareUrl} title={deal.title} communityName={deal.community.name} priceCents={v.priceCents} next={v.next} referral={referral} /> : null}
 
         <Card className="divide-y divide-line">
           <div className="p-5">
@@ -146,8 +148,8 @@ export default async function BookingPage({ params, searchParams }: Props) {
               <div className="flex items-baseline justify-between">
                 <span className="text-muted">{v.locked ? "Final price" : "Price right now"}</span>
                 <span className="font-display text-2xl font-bold">
-                  {formatCents(v.priceCents + addOnTotal)}
-                  {addOnTotal ? <span className="ml-1 text-sm font-normal text-muted">with add-ons</span> : null}
+                  {formatCents(v.priceCents + addOnTotal - credit)}
+                  {addOnTotal || credit ? <span className="ml-1 text-sm font-normal text-muted">{[addOnTotal ? "with add-ons" : "", credit ? `after ${formatCents(credit)} referral credit` : ""].filter(Boolean).join(", ")}</span> : null}
                 </span>
               </div>
               <TierProgress tiers={deal.tiers} confirmed={v.confirmed} currentTierMinHomes={v.currentTierMinHomes} next={v.next} locked={v.locked} />

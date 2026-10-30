@@ -7,7 +7,8 @@ import { formatDateTime } from "@/lib/dates";
 import { formatCents } from "@/lib/domain/money";
 import { routeSortKey } from "@/lib/domain/address";
 import { SOURCE_LABELS } from "@/lib/services/admin";
-import { bookingAddress, bookingInclude } from "@/lib/services/deals";
+import { bookingAddress, bookingInclude, REFERRAL_STATUSES } from "@/lib/services/deals";
+import { referralCreditCents } from "@/lib/domain/pricing";
 import { adminCancel, chargeBooking, chargeSelected, refund, retryBookingCharge } from "../../../actions";
 import { bookingBadge } from "../../badges";
 
@@ -100,7 +101,10 @@ export async function BookingsTab({ dealId, status }: { dealId: string; status?:
             {shown.map((b) => {
               const charge = b.charges[0];
               const addOnTotal = b.addOns.reduce((s, a) => s + a.priceCents, 0);
-              const amount = charge?.amountCents ?? (deal.lockedPriceCents != null ? deal.lockedPriceCents + addOnTotal : null);
+              const referrals = all.filter((x) => x.referredById === b.id && (REFERRAL_STATUSES as readonly string[]).includes(x.status)).length;
+              const creditPreview = deal.lockedPriceCents != null ? referralCreditCents({ referrals, perReferralCents: deal.referralCreditCents, capCents: deal.referralCreditCapCents, jobTotalCents: deal.lockedPriceCents + addOnTotal }) : 0;
+              const amount = charge?.amountCents ?? (deal.lockedPriceCents != null ? deal.lockedPriceCents + addOnTotal - creditPreview : null);
+              const credit = charge?.referralCreditCents ?? creditPreview;
               return (
                 <tr key={b.id} className="align-top">
                   <td className="px-3 py-3">
@@ -120,6 +124,7 @@ export async function BookingsTab({ dealId, status }: { dealId: string; status?:
                   <td className="px-3 py-3">
                     <p>{SOURCE_LABELS[b.source]}</p>
                     {b.referredBy ? <p className="text-xs text-muted">from {b.referredBy.resident.name}</p> : null}
+                    {referrals ? <p className="text-xs font-semibold text-pine-700">Referred {referrals} {referrals === 1 ? "neighbor" : "neighbors"}</p> : null}
                     <p className="text-xs text-muted">{formatDateTime(b.bookedAt ?? b.createdAt)}</p>
                   </td>
                   <td className="px-3 py-3">
@@ -130,6 +135,7 @@ export async function BookingsTab({ dealId, status }: { dealId: string; status?:
                   </td>
                   <td className="px-3 py-3 text-right tabular-nums">
                     {amount != null ? formatCents(amount, { showZeroCents: true }) : <span className="text-muted">–</span>}
+                    {credit ? <p className="text-xs text-pine-700">after −{formatCents(credit, { showZeroCents: true })} referral</p> : null}
                     {charge?.refundedCents ? <p className="text-xs text-muted">−{formatCents(charge.refundedCents, { showZeroCents: true })} refunded</p> : null}
                   </td>
                   <td className="px-3 py-3">

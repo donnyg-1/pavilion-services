@@ -2,7 +2,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { db, type Tx } from "@/lib/db";
 import { url } from "@/lib/config";
 import { holdsSpot, signupWindow, spotsLeft, type SignupWindow } from "@/lib/domain/capacity";
-import { currentPriceCents, nextTier, tierForCount } from "@/lib/domain/pricing";
+import { currentPriceCents, nextTier, referralsUntilCap, tierForCount } from "@/lib/domain/pricing";
 import { sendEmail } from "@/lib/email/send";
 import * as T from "@/lib/email/templates";
 
@@ -87,7 +87,22 @@ export function dealContext(deal: DealFull): T.DealContext {
     reserveFundLine: fillCopy(deal.reserveFundLine, deal),
     guaranteeLine: fillCopy(deal.guaranteeLine, deal),
     dealUrl: url(`/d/${deal.slug}`),
+    referralCreditCents: deal.referralCreditCents,
+    referralCreditCapCents: deal.referralCreditCapCents,
   };
+}
+
+/** Bookings that count as a successful referral: the neighbor booked and didn't cancel. */
+export const REFERRAL_STATUSES = ["booked", "completed", "charged", "failed", "refunded"] as const;
+
+export type ReferralStatus = { enabled: boolean; referrals: number; earnedCents: number; perCents: number; capCents: number; left: number };
+
+/** How much a home has earned from neighbors booking with its link (before the per-job limit). */
+export async function referralStatus(deal: { referralCreditCents: number; referralCreditCapCents: number }, bookingId: string): Promise<ReferralStatus> {
+  const per = deal.referralCreditCents;
+  const cap = deal.referralCreditCapCents;
+  const referrals = await db.booking.count({ where: { referredById: bookingId, status: { in: [...REFERRAL_STATUSES] } } });
+  return { enabled: per > 0, referrals, earnedCents: Math.min(referrals * per, cap), perCents: per, capCents: cap, left: referralsUntilCap(referrals, per, cap) };
 }
 
 export function bookingAddress(b: { unit: string | null; communityAddress: { raw: string; normalized: string } }): string {
@@ -126,13 +141,14 @@ export async function lockDealIfDue(dealId: string, now = new Date()): Promise<b
   const bookings = await db.booking.findMany({ where: { dealId, status: "booked" }, include: bookingInclude });
   const ctx = dealContext(deal);
   for (const b of bookings) {
+    const referral = await referralStatus(deal, b.id);
     await sendEmail({
       to: b.resident.email,
       template: "signups_closed",
       dealId,
       bookingId: b.id,
       dedupeKey: `locked:${b.id}`,
-      ...T.signupsClosed(ctx, bookingContext(deal, b), price),
+      ...T.signupsClosed(ctx, bookingContext(deal, b), price, referral),
     });
   }
   return true;

@@ -24,7 +24,7 @@ export async function LedgerTab({ dealId }: { dealId: string }) {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-muted">One row per successful charge; refunds add negative rows. Pay out manually, then mark paid.</p>
+        <p className="text-muted">One row per successful charge; refunds add negative rows. Final price is after any referral credit, so every share already reflects it. Pay out manually, then mark paid.</p>
         <a href={`/admin/deals/${dealId}/export/ledger`} className={buttonClass("secondary", "sm")}>
           Export ledger CSV
         </a>
@@ -79,7 +79,10 @@ export async function LedgerTab({ dealId }: { dealId: string }) {
                   <Badge tone={r.type === "refund" ? "red" : "green"}>{r.type}</Badge>
                   {r.feeIsEstimate ? <span className="ml-1 text-xs text-muted" title="Stripe fee estimated">est.</span> : null}
                 </td>
-                <td className="px-3 py-2.5 text-right">{m(r.finalPriceCents)}</td>
+                <td className="px-3 py-2.5 text-right">
+                  {m(r.finalPriceCents)}
+                  {r.referralCreditCents ? <span className="block text-xs text-muted">after {m(-r.referralCreditCents)} referral</span> : null}
+                </td>
                 <td className="px-3 py-2.5 text-right">{m(r.commissionCents)}</td>
                 <td className="px-3 py-2.5 text-right">{m(r.managerShareCents)}</td>
                 <td className="px-3 py-2.5 text-right">{m(r.hoaShareCents)}</td>

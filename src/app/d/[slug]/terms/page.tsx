@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicFooter, PublicHeader } from "@/components/public-shell";
 import { formatDeadline } from "@/lib/dates";
-import { bpsToPercent } from "@/lib/domain/money";
+import { bpsToPercent, formatCents } from "@/lib/domain/money";
 import { fillCopy, loadDealBySlug } from "@/lib/services/deals";
 
 export const metadata: Metadata = { title: "Booking terms" };
@@ -51,6 +51,17 @@ export default async function TermsPage({ params }: { params: Promise<{ slug: st
         `Card processing fees are paid by the service company out of its payment, not added to your price.`,
       ],
     ],
+    ...(deal.referralCreditCents > 0
+      ? ([
+          [
+            "Neighbor referral credit",
+            [
+              `After you book, you get a personal link. For each neighbor who books with it and is still booked when the work is done, you get ${formatCents(deal.referralCreditCents)} off your own job, up to ${formatCents(deal.referralCreditCapCents)}. The credit is applied when your card is charged and has no cash value.`,
+              `The credit lowers the price charged, and Pavilion, the service company, the HOA reserve fund and the management company share its cost in proportion to their shares.`,
+            ],
+          ],
+        ] as [string, string[]][])
+      : []),
     ["Satisfaction guarantee", [`${fillCopy(deal.guaranteeLine, deal)} Contact us within 7 days of the service by replying to your receipt email. The service company will come back to fix the issue, or we will refund you.`]],
     [
       "Cancellations and weather",

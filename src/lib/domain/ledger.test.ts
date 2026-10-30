@@ -117,3 +117,16 @@ describe("computeRefundLedger", () => {
     expect(() => computeRefundLedger(original, 0)).toThrow();
   });
 });
+
+describe("referral credit split with the vendor", () => {
+  it("comes off the price charged, so every party's share shrinks proportionally", () => {
+    const full = computeChargeLedger(14900, 0, defaults);
+    const credited = computeChargeLedger(14900 - 1000, 0, defaults); // $10 referral credit
+    expect(full.finalPriceCents - credited.finalPriceCents).toBe(1000);
+    expect(full.commissionCents - credited.commissionCents).toBe(150); // 15% of the $10
+    expect(full.managerShareCents - credited.managerShareCents).toBe(40);
+    expect(full.hoaShareCents - credited.hoaShareCents).toBe(30);
+    expect(full.vendorPayoutCents - credited.vendorPayoutCents).toBe(850);
+    expect(partsAddUp(credited)).toBe(true);
+  });
+});

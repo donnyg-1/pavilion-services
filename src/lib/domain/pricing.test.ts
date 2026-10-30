@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bookingTotalCents, currentPriceCents, nextTier, tierForCount, tierUnlockedBetween, validateTiers } from "./pricing";
+import { bookingTotalCents, currentPriceCents, nextTier, referralCreditCents, referralsUntilCap, tierForCount, tierUnlockedBetween, validateTiers } from "./pricing";
 
 const tiers = [
   { minHomes: 10, priceCents: 12900 },
@@ -81,5 +81,34 @@ describe("bookingTotalCents", () => {
   it("adds flat-price add-ons to the tier price", () => {
     expect(bookingTotalCents(14900, [2500, 1500])).toBe(18900);
     expect(bookingTotalCents(14900, [])).toBe(14900);
+  });
+});
+
+describe("referralCreditCents", () => {
+  const base = { perReferralCents: 500, capCents: 2500, jobTotalCents: 14900 };
+  it("gives $5 per neighbor", () => {
+    expect(referralCreditCents({ ...base, referrals: 0 })).toBe(0);
+    expect(referralCreditCents({ ...base, referrals: 1 })).toBe(500);
+    expect(referralCreditCents({ ...base, referrals: 3 })).toBe(1500);
+  });
+  it("stops at the cap", () => {
+    expect(referralCreditCents({ ...base, referrals: 5 })).toBe(2500);
+    expect(referralCreditCents({ ...base, referrals: 12 })).toBe(2500);
+  });
+  it("never takes the charge below Stripe's minimum", () => {
+    expect(referralCreditCents({ ...base, referrals: 5, jobTotalCents: 2000 })).toBe(1950);
+    expect(referralCreditCents({ ...base, referrals: 5, jobTotalCents: 40 })).toBe(0);
+  });
+  it("is off when the deal sets $0", () => {
+    expect(referralCreditCents({ ...base, perReferralCents: 0, referrals: 4 })).toBe(0);
+  });
+});
+
+describe("referralsUntilCap", () => {
+  it("counts the referrals left that still earn credit", () => {
+    expect(referralsUntilCap(0, 500, 2500)).toBe(5);
+    expect(referralsUntilCap(3, 500, 2500)).toBe(2);
+    expect(referralsUntilCap(7, 500, 2500)).toBe(0);
+    expect(referralsUntilCap(0, 0, 2500)).toBe(0);
   });
 });

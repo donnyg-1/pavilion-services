@@ -90,7 +90,17 @@ export type DealContext = {
   reserveFundLine: string; // already filled in with the community name
   guaranteeLine: string;
   dealUrl: string;
+  referralCreditCents: number; // 0 = no referral reward on this deal
+  referralCreditCapCents: number;
 };
+
+type Referral = { referrals: number; earnedCents: number; left: number };
+
+/** "Get $5 off your own job for every neighbor who books with your link (up to $25)." */
+function referralPitch(d: DealContext): string | null {
+  if (d.referralCreditCents <= 0) return null;
+  return `Get ${formatCents(d.referralCreditCents)} off your own job for every neighbor who books with your link (up to ${formatCents(d.referralCreditCapCents)}).`;
+}
 
 export type BookingContext = {
   name: string;
@@ -128,7 +138,7 @@ export function bookingConfirmed(d: DealContext, b: BookingContext, priceCents: 
       ]),
       callout(`${priceLine} The price can only go down. It locks when signups close ${formatDeadline(d.signupDeadline)}.`),
       p(`<strong>Your card is saved, not charged.</strong> We charge it only after the job is done.`),
-      p(`<strong>Know a neighbor who'd want this?</strong> Every home that books lowers the price for everyone, you included.`),
+      p(`<strong>Know a neighbor who'd want this?</strong> Every home that books lowers the price for everyone, you included.${referralPitch(d) ? ` And you ${referralPitch(d)!.replace(/^Get/, "get")}` : ""}`),
       button(b.shareUrl, "Share with neighbors"),
       small(`Plans change? <a href="${esc(b.manageUrl)}" style="color:${C.pine};">View or cancel your booking</a> any time before signups close.`),
       small(esc(d.reserveFundLine)),
@@ -143,6 +153,7 @@ export function bookingConfirmed(d: DealContext, b: BookingContext, priceCents: 
     priceLine.replace(/<[^>]+>/g, ""),
     "Your card is saved, not charged. We charge it only after the job is done.",
     "",
+    referralPitch(d),
     `Share with neighbors: ${b.shareUrl}`,
     `View or cancel: ${b.manageUrl}`,
     "",
@@ -159,6 +170,7 @@ export function tierUnlocked(d: DealContext, b: BookingContext, homesBooked: num
     body: [
       h1(`Your price just dropped to ${formatCents(newPriceCents)}`),
       p(`${homesBooked} homes in ${esc(d.communityName)} have booked ${esc(d.title)}, so the price dropped for everyone, including you. ${nextLine}`),
+      ...(referralPitch(d) ? [p(esc(referralPitch(d)!))] : []),
       button(b.shareUrl, "Share with neighbors"),
       small(`Nothing to do on your end. You'll pay the final price after the job on ${formatServiceDate(d.serviceDate)}.`),
     ].join(""),
@@ -171,8 +183,9 @@ export function tierUnlocked(d: DealContext, b: BookingContext, homesBooked: num
   return { subject, html, text };
 }
 
-export function signupsClosed(d: DealContext, b: BookingContext, finalPriceCents: number): EmailContent {
-  const total = finalPriceCents + b.addOns.reduce((s, a) => s + a.priceCents, 0);
+export function signupsClosed(d: DealContext, b: BookingContext, finalPriceCents: number, referral?: Referral): EmailContent {
+  const credit = referral?.earnedCents ?? 0;
+  const total = Math.max(50, finalPriceCents + b.addOns.reduce((s, a) => s + a.priceCents, 0) - credit);
   const subject = `Signups closed. Your final price: ${formatCents(finalPriceCents)}`;
   const html = layout({
     preheader: `${d.title} is ${formatServiceDate(d.serviceDate)}. Your price is locked.`,
@@ -184,6 +197,7 @@ export function signupsClosed(d: DealContext, b: BookingContext, finalPriceCents
         ["Address", esc(b.address)],
         ["Service", `${formatCents(finalPriceCents)} <span style="color:${C.muted};text-decoration:line-through;font-size:13px;">${formatCents(d.normalPriceCents)}</span>`],
         ...addOnRows(b),
+        ...(credit ? [["Neighbor referral credit", `−${formatCents(credit)} <span style="color:${C.muted};font-size:13px;">(${referral!.referrals} ${referral!.referrals === 1 ? "neighbor" : "neighbors"})</span>`] as [string, string]] : []),
         ["Total after the job", `<strong>${formatCents(total)}</strong>`],
       ]),
       small(`We'll send a reminder the day before. Your card is charged only after the work is done.`),
@@ -228,7 +242,7 @@ export function rescheduled(d: DealContext, b: BookingContext, previousDate: Dat
   return { subject, html, text };
 }
 
-export function receipt(d: DealContext, b: BookingContext, opts: { basePriceCents: number; totalCents: number; card: string; ratingUrl: (score: number) => string }): EmailContent {
+export function receipt(d: DealContext, b: BookingContext, opts: { basePriceCents: number; referralCreditCents: number; totalCents: number; card: string; ratingUrl: (score: number) => string }): EmailContent {
   const subject = `Receipt: ${d.title}, ${formatCents(opts.totalCents)}`;
   const stars = [1, 2, 3, 4, 5]
     .map(
@@ -244,6 +258,7 @@ export function receipt(d: DealContext, b: BookingContext, opts: { basePriceCent
       details([
         [d.serviceName, `${formatCents(opts.basePriceCents)} <span style="color:${C.muted};text-decoration:line-through;font-size:13px;">${formatCents(d.normalPriceCents)}</span>`],
         ...b.addOns.map((a): [string, string] => [a.name, formatCents(a.priceCents)]),
+        ...(opts.referralCreditCents ? [["Neighbor referral credit", `−${formatCents(opts.referralCreditCents, { showZeroCents: false })}`] as [string, string]] : []),
         ["Total charged", `<strong>${formatCents(opts.totalCents)}</strong>`],
         ["Card", esc(opts.card)],
         ["Address", esc(b.address)],
@@ -259,6 +274,7 @@ export function receipt(d: DealContext, b: BookingContext, opts: { basePriceCent
     `Thanks, ${b.name.split(" ")[0]}. You're all set.`,
     `${d.serviceName}: ${formatCents(opts.basePriceCents)}`,
     ...b.addOns.map((a) => `${a.name}: ${formatCents(a.priceCents)}`),
+    opts.referralCreditCents ? `Neighbor referral credit: -${formatCents(opts.referralCreditCents)}` : null,
     `Total charged: ${formatCents(opts.totalCents)} (${opts.card})`,
     "",
     `How did ${d.vendorName} do? Tap a rating (1 = poor, 5 = excellent):`,
@@ -394,4 +410,28 @@ export function adminReviewAlert(d: DealContext, r: { name: string; email: strin
     }),
     text: `${r.name} (${r.email}, ${r.phone}) requested review for ${r.address} on ${d.title}. ${adminUrl}`,
   };
+}
+
+export function referralEarned(d: DealContext, b: BookingContext, r: Referral): EmailContent {
+  const capped = r.left === 0;
+  const subject = `A neighbor booked with your link: ${formatCents(r.earnedCents)} off your ${d.title}`;
+  const more = capped
+    ? `That's the most you can earn for this service day. Thank you for spreading the word!`
+    : `Every neighbor who books with your link takes another ${formatCents(d.referralCreditCents)} off, up to ${formatCents(d.referralCreditCapCents)}.`;
+  const html = layout({
+    preheader: `You've earned ${formatCents(r.earnedCents)} off so far.`,
+    body: [
+      h1(`You just earned ${formatCents(d.referralCreditCents)} off`),
+      p(`A neighbor booked ${esc(d.title)} with your link. You now have <strong>${formatCents(r.earnedCents)} off</strong> your own job, taken off when your card is charged after the work is done.`),
+      callout(more),
+      ...(capped ? [] : [button(b.shareUrl, "Share your link again")]),
+      small(`Credit counts for neighbors who are still booked when we charge after the job.`),
+    ].join(""),
+  });
+  const text = toText([
+    `A neighbor booked ${d.title} with your link. You now have ${formatCents(r.earnedCents)} off your own job.`,
+    more,
+    capped ? null : `Your link: ${b.shareUrl}`,
+  ]);
+  return { subject, html, text };
 }

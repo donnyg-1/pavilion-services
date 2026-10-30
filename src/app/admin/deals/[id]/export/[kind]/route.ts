@@ -53,13 +53,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   } else if (kind === "ledger") {
     const entries = await db.ledgerEntry.findMany({ where: { dealId: id }, include: { booking: { include: { communityAddress: true, resident: true } } }, orderBy: { createdAt: "asc" } });
     rows = [
-      ["Date", "Type", "Address", "Resident", "Stripe ref", "Final price", "Commission", "Manager share", "HOA share", "Pavilion keeps", "Processing fee", "Fee absorbed by Pavilion", "Vendor payout", "Fee estimated", "Commission %", "Manager %", "HOA %", "Share basis", "Vendor paid", "Manager paid", "HOA paid"],
+      ["Date", "Type", "Address", "Resident", "Stripe ref", "Referral credit", "Final price", "Commission", "Manager share", "HOA share", "Pavilion keeps", "Processing fee", "Fee absorbed by Pavilion", "Vendor payout", "Fee estimated", "Commission %", "Manager %", "HOA %", "Share basis", "Vendor paid", "Manager paid", "HOA paid"],
       ...entries.map((e) => [
         e.createdAt.toISOString(),
         e.type,
         e.booking.communityAddress.raw,
         e.booking.resident.name,
         e.stripeRefId,
+        dollars(e.referralCreditCents),
         dollars(e.finalPriceCents),
         dollars(e.commissionCents),
         dollars(e.managerShareCents),

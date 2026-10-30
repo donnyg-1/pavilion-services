@@ -28,7 +28,8 @@ export function OverviewTab({ stats }: { stats: Stats }) {
           <Card className="p-5">
             <h2 className="text-lg font-bold">Where bookings come from</h2>
             <p className="text-sm text-muted">
-              {pct(stats.referralShare)} of bookings came from neighbor referrals. Visitors are unique browsers.
+              {pct(stats.referralShare)} of bookings came from neighbor referrals.
+              {deal.referralCreditCents > 0 ? ` Referrers get ${formatCents(deal.referralCreditCents)} off per neighbor, up to ${formatCents(deal.referralCreditCapCents)}.` : ""} Visitors are unique browsers.
             </p>
             <div className="mt-3 overflow-x-auto">
               <table className="w-full text-sm">
@@ -83,6 +84,7 @@ export function OverviewTab({ stats }: { stats: Stats }) {
                 ["HOA reserve share", money.hoaShareCents],
                 ["Card processing", money.processingFeeCents],
                 ["Vendor payout owed", money.vendorPayoutCents],
+                ["Referral credits given", stats.referralCreditsCents],
               ].map(([k, v]) => (
                 <div key={k as string}>
                   <dt className="text-muted">{k}</dt>
