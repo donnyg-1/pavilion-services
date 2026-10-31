@@ -111,8 +111,8 @@ model Deal {
   // Referral reward: the referrer gets this much off their own job for each neighbor who
   // books with their link (and is still booked when charged), up to the cap. 0 turns it off.
   // It comes off the price charged, so everyone's share (commission, HOA, manager, vendor) shrinks with it.
-  referralCreditCents    Int     @default(500)
-  referralCreditCapCents Int     @default(2500)
+  referralCreditCents    Int     @default(300)
+  referralCreditCapCents Int     @default(1500)
 
   // Copy that varies per deal. {community} is replaced with the community name.
   reserveFundLine     String     @default("A share of every booking goes to {community}'s reserve fund.")

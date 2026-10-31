@@ -96,7 +96,7 @@ export type DealContext = {
 
 type Referral = { referrals: number; earnedCents: number; left: number };
 
-/** "Get $5 off your own job for every neighbor who books with your link (up to $25)." */
+/** "Get $3 off your own job for every neighbor who books with your link (up to $15)." */
 function referralPitch(d: DealContext): string | null {
   if (d.referralCreditCents <= 0) return null;
   return `Get ${formatCents(d.referralCreditCents)} off your own job for every neighbor who books with your link (up to ${formatCents(d.referralCreditCapCents)}).`;

@@ -33,7 +33,7 @@ test("a neighbor booking with your share link earns you credit", async ({ browse
   await expect(b.getByRole("heading", { name: /You're booked/ })).toBeVisible();
 
   await a.reload();
-  await expect(a.getByTestId("referral-meter")).toContainText("You've earned $5 off");
+  await expect(a.getByTestId("referral-meter")).toContainText("You've earned $3 off");
 });
 
 test("resident books, admin charges, ledger records it", async ({ page, browser }) => {
@@ -87,7 +87,7 @@ test("resident books, admin charges, ledger records it", async ({ page, browser 
   await expect(admin.locator("tr", { hasText: "E2E Resident" }).first()).toBeVisible();
 });
 
-test("the referrer is charged $5 less", async ({ browser }) => {
+test("the referrer is charged $3 less", async ({ browser }) => {
   test.skip(!referrerToken, "Referral booking didn't run");
   const admin = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
   admin.on("dialog", (d) => d.accept());
@@ -100,9 +100,9 @@ test("the referrer is charged $5 less", async ({ browser }) => {
   await admin.goto(`${dealUrl}?tab=bookings&status=booked`);
   const row = admin.locator("tr").filter({ has: admin.locator(`a[href="/b/${referrerToken}"]`) });
   await expect(row).toContainText("Referred 1 neighbor");
-  await expect(row).toContainText("after −$5.00 referral");
+  await expect(row).toContainText("after −$3.00 referral");
   await row.getByRole("button", { name: "Complete & charge" }).click();
   await expect(admin.getByText(/Charged \$/)).toBeVisible();
   await admin.goto(`${dealUrl}?tab=ledger`);
-  await expect(admin.getByText("after -$5.00 referral").or(admin.getByText("after −$5.00 referral")).first()).toBeVisible();
+  await expect(admin.getByText("after -$3.00 referral").or(admin.getByText("after −$3.00 referral")).first()).toBeVisible();
 });
