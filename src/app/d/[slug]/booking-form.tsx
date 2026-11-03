@@ -30,7 +30,7 @@ export function BookingForm(props: Props) {
   const router = useRouter();
   const [contact, setContact] = useState<Contact>(empty);
   const [notes, setNotes] = useState("");
-  const [texts, setTexts] = useState(true);
+  const [texts, setTexts] = useState(false); // unticked: carriers want opt-in to be an active choice
   const [showNotes, setShowNotes] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [mode, setMode] = useState<"book" | "waitlist">(props.full ? "waitlist" : "book");
