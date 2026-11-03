@@ -73,7 +73,7 @@ export default async function TermsPage({ params }: { params: Promise<{ slug: st
     [
       "Text messages",
       [
-        `If you tick "Text me about my service day," Pavilion will text the mobile number you gave about this booking: a confirmation, a reminder the day before, a heads-up when the crew is on the way, weather changes and payment problems. That's usually 2 to 5 texts per service. We don't send marketing texts.`,
+        `If you tick "Text me when the crew is on the way," Pavilion will text the mobile number you gave about this booking: a confirmation, a reminder the day before, a heads-up when the crew is on the way, weather changes and payment problems. That's usually 2 to 5 texts per service. We don't send marketing texts.`,
         `Message and data rates may apply. Reply STOP to any text to opt out, or turn texts off on your booking page. Reply HELP for help. Ticking the box isn't required to book. Carriers aren't liable for delayed or undelivered messages.`,
       ],
     ],

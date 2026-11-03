@@ -306,8 +306,8 @@ function TextOptIn({ checked, onChange }: { checked: boolean; onChange: (v: bool
     <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-white px-3.5 py-3">
       <input type="checkbox" name="smsOptIn" checked={checked} onChange={(e) => onChange(e.target.checked)} className="mt-0.5 size-5 shrink-0 accent-pine-700" />
       <span className="text-sm">
-        <span className="block font-semibold">Text me about my service day</span>
-        <span className="block text-muted">A reminder the day before, a heads-up when the crew is on the way, and any weather changes. Up to about 5 texts per service. Msg &amp; data rates may apply. Reply STOP to opt out.</span>
+        <span className="block font-semibold">Text me when the crew is on the way</span>
+        <span className="block text-muted">Plus your confirmation, a reminder the day before, and any date or payment updates. No marketing texts. Usually 2–5 texts per service. Msg &amp; data rates may apply. Reply STOP to opt out.</span>
       </span>
     </label>
   );

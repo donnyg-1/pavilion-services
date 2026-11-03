@@ -73,7 +73,7 @@ Set `RESEND_API_KEY` and `EMAIL_FROM`. Until you verify a sending domain in Rese
 
 ## Texts (Twilio)
 
-Residents who tick "Text me about my service day" get:
+Residents who tick "Text me when the crew is on the way" get:
 
 | Text | When |
 | --- | --- |

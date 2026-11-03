@@ -11,7 +11,7 @@ test("wallet button books in one tap", async ({ page }) => {
   await page.goto("/d/gutter-day?src=board");
   test.skip(await page.getByText("Signups are closed").isVisible(), "Signups already closed. Run `npm run db:reset` for fresh seed data.");
   // Texts are opt-in: the box starts unticked, so no texts unless the resident asks.
-  await expect(page.getByRole("checkbox", { name: /Text me about my service day/ })).not.toBeChecked();
+  await expect(page.getByRole("checkbox", { name: /Text me when the crew is on the way/ })).not.toBeChecked();
   await page.getByRole("button", { name: /Book with test wallet/ }).click();
   await expect(page.getByRole("heading", { name: /You're booked/ })).toBeVisible();
   await expect(page.getByRole("button", { name: "Text me reminders" })).toBeVisible();
@@ -50,7 +50,7 @@ test("resident books, admin charges, ledger records it", async ({ page, browser 
   await page.fill("#name", "E2E Resident");
   await page.fill("#email", email);
   await page.fill("#phone", "801-555-0111");
-  await page.getByRole("checkbox", { name: /Text me about my service day/ }).check();
+  await page.getByRole("checkbox", { name: /Text me when the crew is on the way/ }).check();
   await page.fill("#street", "1 Not A Real Rd");
   await page.getByRole("button", { name: /^Book for/ }).click();
   await expect(page.getByText("Not on the list? Request review")).toBeVisible();
