@@ -1,31 +1,49 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: var(--font-bricolage), var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  /* Matches pavilion.community: a heavy serif for headlines, a friendly grotesk for everything else. */
+  --font-sans: var(--font-bricolage), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
 
-  --color-pine-950: #0e2419;
-  --color-pine-900: #133222;
-  --color-pine-800: #18402d;
-  --color-pine-700: #1f4d3a;
-  --color-pine-600: #2a624a;
-  --color-pine-500: #3a7a5d;
-  --color-pine-100: #e3ede6;
+  /* Navy: buttons, links, headings that need color. */
+  --color-navy-950: #121638;
+  --color-navy-900: #191e47;
+  --color-navy-800: #1f2552;
+  --color-navy-700: #262d5f;
+  --color-navy-600: #343d7a;
+  --color-navy-500: #4a64a0;
+  --color-navy-100: #e7eaf5;
 
-  --color-sage-50: #f4f7f1;
-  --color-sage-100: #eef2ea;
-  --color-sage-200: #dce4d5;
-  --color-sage-300: #c3d1b8;
-  --color-sage-400: #a3b78f;
-  --color-sage-500: #84996f;
-  --color-sage-600: #687c55;
+  /* Stone: warm off-white surfaces, like the site's secondary buttons. */
+  --color-stone-50: #faf9f6;
+  --color-stone-100: #f3f1ec;
+  --color-stone-200: #e9e6df;
+  --color-stone-300: #d8d3c8;
+  --color-stone-400: #b5afa2;
+  --color-stone-500: #8f897c;
+  --color-stone-600: #6b665c;
 
-  --color-cream: #faf8f3;
-  --color-ink: #1b2420;
-  --color-muted: #5b6b62;
-  --color-line: #e3e8de;
-  --color-honey: #c99a3b;
-  --color-honey-50: #fbf4e4;
+  /* Sky: the soft blue behind the site's hero illustration. */
+  --color-sky-50: #eef8fc;
+  --color-sky-100: #e0f3f9;
+  --color-sky-200: #c8e8f3;
+
+  /* Leaf: success states and checkmarks. */
+  --color-leaf-50: #eef3ee;
+  --color-leaf-100: #e3ece4;
+  --color-leaf-600: #4d7a58;
+  --color-leaf-700: #3d6347;
+
+  /* Illustration accents. */
+  --color-coral: #d96b55;
+  --color-steel: #7499c4;
+
+  --color-cream: #ffffff;
+  --color-ink: #1c1b19;
+  --color-muted: #6b6963;
+  --color-line: #e9e6df;
+  --color-honey: #d9a24c;
+  --color-honey-50: #fbf3e2;
   --color-danger: #b4412f;
   --color-danger-50: #fbecea;
 }
@@ -46,18 +64,18 @@
     text-wrap: pretty;
   }
   ::selection {
-    @apply bg-sage-300;
+    @apply bg-stone-300;
   }
   :focus-visible {
-    @apply outline-2 outline-offset-2 outline-pine-600;
+    @apply outline-2 outline-offset-2 outline-navy-600;
   }
 }
 
 /* Native inputs keep a 16px font on mobile so iOS doesn't zoom on focus. */
 @utility input-base {
-  @apply block w-full rounded-xl border border-line bg-white px-3.5 py-3 text-base text-ink shadow-[0_1px_0_rgba(27,36,32,0.03)] placeholder:text-muted/60 transition;
+  @apply block w-full rounded-xl border border-line bg-white px-3.5 py-3 text-base text-ink shadow-[0_1px_0_rgba(28,27,25,0.03)] placeholder:text-muted/60 transition;
   &:focus {
-    @apply border-pine-600 outline-none ring-4 ring-pine-600/10;
+    @apply border-navy-600 outline-none ring-4 ring-navy-600/10;
   }
   &[aria-invalid="true"] {
     @apply border-danger ring-4 ring-danger/10;

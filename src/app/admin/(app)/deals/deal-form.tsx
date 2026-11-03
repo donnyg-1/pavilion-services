@@ -58,7 +58,7 @@ export function DealForm({ dealId, initial, communities, vendors, hasBookings, l
           <Field label="Service" htmlFor="serviceName" hint="e.g. Gutter cleaning">
             <Input id="serviceName" value={d.serviceName} onChange={text("serviceName")} />
           </Field>
-          <Field label="Community" htmlFor="communityId" hint={<Link href="/admin/communities" className="text-pine-700">Add a community</Link>}>
+          <Field label="Community" htmlFor="communityId" hint={<Link href="/admin/communities" className="text-navy-700">Add a community</Link>}>
             <Select id="communityId" value={d.communityId} onChange={text("communityId")}>
               <option value="">Choose…</option>
               {communities.map((o) => (
@@ -68,7 +68,7 @@ export function DealForm({ dealId, initial, communities, vendors, hasBookings, l
               ))}
             </Select>
           </Field>
-          <Field label="Vendor" htmlFor="vendorId" hint={<Link href="/admin/vendors" className="text-pine-700">Add a vendor</Link>}>
+          <Field label="Vendor" htmlFor="vendorId" hint={<Link href="/admin/vendors" className="text-navy-700">Add a vendor</Link>}>
             <Select id="vendorId" value={d.vendorId} onChange={text("vendorId")}>
               <option value="">Choose…</option>
               {vendors.map((o) => (
@@ -202,7 +202,7 @@ export function DealForm({ dealId, initial, communities, vendors, hasBookings, l
           </Field>
         </div>
         {sample > 0 ? (
-          <div className="rounded-xl bg-sage-50 px-4 py-3 text-sm">
+          <div className="rounded-xl bg-stone-50 px-4 py-3 text-sm">
             <p className="font-semibold">At the lowest tier ({formatCents(sample)}):</p>
             <p className="mt-1 text-muted">
               Commission {formatCents(commission, { showZeroCents: true })} → manager {formatCents(mgr, { showZeroCents: true })}, HOA {formatCents(hoa, { showZeroCents: true })}, Pavilion keeps{" "}
@@ -245,7 +245,7 @@ export function DealForm({ dealId, initial, communities, vendors, hasBookings, l
         </Field>
       </Card>
 
-      <div className="sticky bottom-0 -mx-4 flex items-center justify-end gap-3 border-t border-line bg-sage-50/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+      <div className="sticky bottom-0 -mx-4 flex items-center justify-end gap-3 border-t border-line bg-stone-50/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
         <Link href={dealId ? `/admin/deals/${dealId}` : "/admin"} className="text-sm font-semibold text-muted">
           Cancel
         </Link>

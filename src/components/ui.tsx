@@ -5,21 +5,9 @@ export function cx(...classes: (string | false | null | undefined)[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-export function LogoMark({ className = "size-7" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
-      <rect width="32" height="32" rx="9" className="fill-pine-700" />
-      <path d="M6.5 13.2 16 7l9.5 6.2" fill="none" stroke="#eef2ea" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M9 14.5h14" stroke="#a3b78f" strokeWidth="2" strokeLinecap="round" />
-      <path d="M11 17v7.5M16 17v7.5M21 17v7.5" stroke="#eef2ea" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 export function Logo({ href = "/", suffix }: { href?: string; suffix?: ReactNode }) {
   return (
-    <Link href={href} className="inline-flex items-center gap-2 font-display text-xl font-bold tracking-tight text-pine-800">
-      <LogoMark />
+    <Link href={href} className="inline-flex items-baseline gap-2 font-display text-[26px] leading-none font-bold tracking-tight text-ink">
       <span>Pavilion</span>
       {suffix ? <span className="ml-1 font-sans text-sm font-medium tracking-normal text-muted">{suffix}</span> : null}
     </Link>
@@ -30,21 +18,21 @@ type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "light";
 type ButtonSize = "sm" | "md" | "lg";
 
 const variants: Record<ButtonVariant, string> = {
-  primary: "bg-pine-700 text-white hover:bg-pine-800 active:bg-pine-900 shadow-sm shadow-pine-900/10",
-  secondary: "bg-white text-pine-800 border border-line hover:border-sage-300 hover:bg-sage-50",
-  ghost: "text-pine-700 hover:bg-sage-100",
+  primary: "bg-navy-700 text-white hover:bg-navy-800 active:bg-navy-900",
+  secondary: "bg-stone-100 text-ink hover:bg-stone-200",
+  ghost: "text-navy-700 hover:bg-stone-100",
   danger: "bg-white text-danger border border-danger/30 hover:bg-danger-50",
-  light: "bg-sage-100 text-pine-800 hover:bg-sage-200",
+  light: "bg-white text-ink hover:bg-stone-100",
 };
 const sizes: Record<ButtonSize, string> = {
-  sm: "h-9 px-3.5 text-sm",
-  md: "h-11 px-5 text-[15px]",
-  lg: "h-14 px-6 text-base",
+  sm: "h-9 rounded-xl px-3.5 text-sm",
+  md: "h-11 rounded-xl px-5 text-[15px]",
+  lg: "h-14 rounded-2xl px-6 text-[17px]",
 };
 
 export function buttonClass(variant: ButtonVariant = "primary", size: ButtonSize = "md", extra?: string) {
   return cx(
-    "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap",
+    "inline-flex items-center justify-center gap-2 font-medium transition disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap",
     variants[variant],
     sizes[size],
     extra,
@@ -60,16 +48,16 @@ export function ButtonLink({ variant, size, className, ...props }: ComponentProp
 }
 
 export function Card({ className, ...props }: ComponentProps<"div">) {
-  return <div className={cx("rounded-2xl border border-line bg-white", className)} {...props} />;
+  return <div className={cx("rounded-3xl border border-line/70 bg-white shadow-[0_2px_16px_rgba(28,27,25,0.05)]", className)} {...props} />;
 }
 
 type BadgeTone = "neutral" | "green" | "honey" | "red" | "blue";
 const tones: Record<BadgeTone, string> = {
-  neutral: "bg-sage-100 text-muted",
-  green: "bg-pine-100 text-pine-800",
+  neutral: "bg-stone-100 text-muted",
+  green: "bg-leaf-100 text-leaf-700",
   honey: "bg-honey-50 text-[#8a6418]",
   red: "bg-danger-50 text-danger",
-  blue: "bg-[#e8eff7] text-[#2c5282]",
+  blue: "bg-navy-100 text-navy-700",
 };
 
 export function Badge({ tone = "neutral", className, ...props }: ComponentProps<"span"> & { tone?: BadgeTone }) {
@@ -99,13 +87,13 @@ export function Textarea({ className, ...props }: ComponentProps<"textarea">) {
 }
 
 export function Select({ className, ...props }: ComponentProps<"select">) {
-  return <select className={cx("input-base appearance-none bg-[url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5 6 6.5l5-5' fill='none' stroke='%235b6b62' stroke-width='1.6'/></svg>\")] bg-[length:12px_8px] bg-[right_14px_center] bg-no-repeat pr-10", className)} {...props} />;
+  return <select className={cx("input-base appearance-none bg-[url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5 6 6.5l5-5' fill='none' stroke='%236b6963' stroke-width='1.6'/></svg>\")] bg-[length:12px_8px] bg-[right_14px_center] bg-no-repeat pr-10", className)} {...props} />;
 }
 
 export function Notice({ tone = "info", title, children, className }: { tone?: "info" | "success" | "warn" | "error"; title?: ReactNode; children?: ReactNode; className?: string }) {
   const styles = {
-    info: "bg-sage-100 border-sage-200 text-ink",
-    success: "bg-pine-100 border-pine-600/20 text-pine-900",
+    info: "bg-stone-100 border-stone-200 text-ink",
+    success: "bg-leaf-50 border-leaf-600/20 text-leaf-700",
     warn: "bg-honey-50 border-honey/30 text-[#5f4512]",
     error: "bg-danger-50 border-danger/25 text-[#7a2a1e]",
   }[tone];
@@ -119,7 +107,7 @@ export function Notice({ tone = "info", title, children, className }: { tone?: "
 
 export function Stat({ label, value, sub, className }: { label: ReactNode; value: ReactNode; sub?: ReactNode; className?: string }) {
   return (
-    <div className={cx("rounded-2xl border border-line bg-white p-4", className)}>
+    <div className={cx("rounded-2xl border border-line/70 bg-white p-4 shadow-[0_2px_16px_rgba(28,27,25,0.05)]", className)}>
       <p className="text-xs font-semibold tracking-wide text-muted uppercase">{label}</p>
       <p className="mt-1 font-display text-2xl font-bold text-ink">{value}</p>
       {sub ? <p className="mt-0.5 text-sm text-muted">{sub}</p> : null}

@@ -69,18 +69,18 @@ export default async function DealPage({ params, searchParams }: Props) {
 
         {/* Hero */}
         <section className="pt-4 pb-6 sm:pt-8">
-          <p className="text-sm font-semibold tracking-wide text-sage-600 uppercase">Neighborhood service day</p>
-          <h1 className="mt-2 text-4xl leading-[1.05] font-extrabold text-pine-900 sm:text-5xl">{deal.title}</h1>
+          <p className="text-sm font-semibold tracking-wide text-stone-600 uppercase">Neighborhood service day</p>
+          <h1 className="mt-2 text-4xl leading-[1.05] font-extrabold text-ink sm:text-5xl">{deal.title}</h1>
           <p className="mt-3 text-lg text-muted">
             {deal.serviceName} for {deal.community.name} homes by <span className="font-semibold text-ink">{deal.vendor.name}</span>, a vetted local pro.
           </p>
           <div className="mt-4 flex flex-wrap gap-2 text-sm">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 font-semibold text-ink ring-1 ring-line">
-              <Icon name="calendar" className="size-4 text-pine-600" /> {formatServiceDate(deal.serviceDate)}
+              <Icon name="calendar" className="size-4 text-navy-600" /> {formatServiceDate(deal.serviceDate)}
             </span>
             {deal.arrivalWindow ? (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-ink ring-1 ring-line">
-                <Icon name="clock" className="size-4 text-pine-600" /> {deal.arrivalWindow}
+                <Icon name="clock" className="size-4 text-navy-600" /> {deal.arrivalWindow}
               </span>
             ) : null}
             {deal.backupDate ? <span className="inline-flex items-center rounded-full px-3 py-1.5 text-muted ring-1 ring-line">Rain date {formatServiceDate(deal.backupDate, "short")}</span> : null}
@@ -89,22 +89,22 @@ export default async function DealPage({ params, searchParams }: Props) {
 
         {/* Price */}
         <Card id="price" className="overflow-hidden shadow-[0_1px_2px_rgba(27,36,32,0.04),0_8px_24px_-12px_rgba(31,77,58,0.18)]">
-          <div className="bg-pine-800 px-5 pt-5 pb-6 text-white sm:px-6">
+          <div className="bg-navy-800 px-5 pt-5 pb-6 text-white sm:px-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm text-sage-300">{v.locked ? "Final group price" : "Group price today"}</p>
+                <p className="text-sm text-stone-300">{v.locked ? "Final group price" : "Group price today"}</p>
                 <p className="mt-1 flex items-baseline gap-3">
                   <span className="font-display text-5xl font-extrabold tracking-tight">{formatCents(v.priceCents)}</span>
-                  <span className="text-lg text-sage-400 line-through decoration-1">{formatCents(deal.normalPriceCents)}</span>
+                  <span className="text-lg text-stone-400 line-through decoration-1">{formatCents(deal.normalPriceCents)}</span>
                 </p>
-                <p className="mt-1 text-sm text-sage-200">per home · everyone pays the same final price</p>
+                <p className="mt-1 text-sm text-stone-200">per home · everyone pays the same final price</p>
               </div>
               {v.savingsCents > 0 ? (
-                <span className="shrink-0 rounded-full bg-sage-200 px-3 py-1 text-sm font-bold text-pine-900">Save {formatCents(v.savingsCents)}</span>
+                <span className="shrink-0 rounded-full bg-stone-200 px-3 py-1 text-sm font-bold text-navy-900">Save {formatCents(v.savingsCents)}</span>
               ) : null}
             </div>
             {v.window === "open" ? (
-              <a href="#book" className={buttonClass("light", "lg", "mt-5 w-full bg-white text-pine-900 hover:bg-sage-100")}>
+              <a href="#book" className={buttonClass("light", "lg", "mt-5 w-full bg-white text-navy-900 hover:bg-stone-100")}>
                 {v.isFull ? "Join the waitlist" : `Book for ${formatCents(v.priceCents)}`} <Icon name="arrow" className="size-5" />
               </a>
             ) : null}
@@ -113,11 +113,11 @@ export default async function DealPage({ params, searchParams }: Props) {
             <TierProgress tiers={deal.tiers} confirmed={v.confirmed} currentTierMinHomes={v.currentTierMinHomes} next={v.next} locked={v.locked} />
             <TierLadder tiers={deal.tiers} confirmed={v.confirmed} currentTierMinHomes={v.currentTierMinHomes} next={v.next} locked={v.locked} compact />
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-xl bg-sage-50 px-3 py-2.5">
+              <div className="rounded-xl bg-stone-50 px-3 py-2.5">
                 <p className="text-muted">Signups close</p>
                 <p className="font-semibold">{formatDeadline(deal.signupDeadline)}</p>
               </div>
-              <div className="rounded-xl bg-sage-50 px-3 py-2.5">
+              <div className="rounded-xl bg-stone-50 px-3 py-2.5">
                 <p className="text-muted">Spots left</p>
                 <p className="font-semibold">{v.window === "open" ? (v.isFull ? "Full, waitlist open" : `${v.spotsLeft} of ${deal.capacity}`) : "Closed"}</p>
               </div>
@@ -133,8 +133,8 @@ export default async function DealPage({ params, searchParams }: Props) {
                 <h2 className="text-2xl font-bold">{v.isFull ? "Join the waitlist" : "Book your home"}</h2>
                 <p className="mt-1 mb-5 text-muted">For {deal.community.name} homes only. Takes about a minute.</p>
                 {ref && deal.referralCreditCents > 0 ? (
-                  <div className="mb-5 flex items-start gap-3 rounded-xl bg-pine-100/70 px-4 py-3 text-[15px] text-pine-900">
-                    <Icon name="users" className="mt-0.5 size-5 shrink-0 text-pine-700" />
+                  <div className="mb-5 flex items-start gap-3 rounded-xl bg-navy-100/70 px-4 py-3 text-[15px] text-navy-900">
+                    <Icon name="users" className="mt-0.5 size-5 shrink-0 text-navy-700" />
                     <p>
                       A neighbor sent you this link. When you book, they get {formatCents(deal.referralCreditCents)} off their job, and you get your own link to do the same.
                     </p>
@@ -164,11 +164,11 @@ export default async function DealPage({ params, searchParams }: Props) {
         </section>
 
         {/* Reserve fund */}
-        <div className="mt-4 flex items-start gap-3 rounded-2xl border border-sage-200 bg-sage-100 px-4 py-3.5">
-          <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-white text-pine-700">
+        <div className="mt-4 flex items-start gap-3 rounded-3xl bg-sky-100 px-4 py-4">
+          <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-white text-leaf-600 shadow-sm">
             <Icon name="leaf" className="size-4.5" />
           </span>
-          <p className="text-[15px] leading-relaxed text-pine-900">{fillCopy(deal.reserveFundLine, deal)}</p>
+          <p className="text-[15px] leading-relaxed text-ink">{fillCopy(deal.reserveFundLine, deal)}</p>
         </div>
 
         {/* How it works */}
@@ -182,7 +182,7 @@ export default async function DealPage({ params, searchParams }: Props) {
             ].map((s, i) => (
               <li key={s.t} className="rounded-2xl border border-line bg-white p-4">
                 <div className="flex items-center gap-2">
-                  <span className="grid size-8 place-items-center rounded-full bg-pine-100 text-pine-700">
+                  <span className="grid size-8 place-items-center rounded-full bg-navy-100 text-navy-700">
                     <Icon name={s.icon} className="size-4.5" />
                   </span>
                   <span className="text-sm font-semibold text-muted">Step {i + 1}</span>
@@ -203,7 +203,7 @@ export default async function DealPage({ params, searchParams }: Props) {
               <ul className="mt-4 space-y-2.5">
                 {included.map((item) => (
                   <li key={item} className="flex items-start gap-3">
-                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-pine-700 text-white">
+                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-navy-700 text-white">
                       <Icon name="check" className="size-3" />
                     </span>
                     <span>{item}</span>
@@ -212,7 +212,7 @@ export default async function DealPage({ params, searchParams }: Props) {
               </ul>
             ) : null}
             <div className="mt-5 flex items-start gap-3 rounded-2xl border border-line bg-white p-4">
-              <Icon name="shield" className="mt-0.5 size-6 shrink-0 text-pine-700" />
+              <Icon name="shield" className="mt-0.5 size-6 shrink-0 text-navy-700" />
               <div>
                 <p className="font-semibold">Satisfaction guarantee</p>
                 <p className="text-sm text-muted">{fillCopy(deal.guaranteeLine, deal)}</p>
@@ -239,7 +239,7 @@ export default async function DealPage({ params, searchParams }: Props) {
               <details key={q} className="group px-4 py-3.5 [&_summary::-webkit-details-marker]:hidden">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-semibold">
                   {q}
-                  <span className="text-xl leading-none text-sage-500 transition group-open:rotate-45">+</span>
+                  <span className="text-xl leading-none text-stone-500 transition group-open:rotate-45">+</span>
                 </summary>
                 <p className="mt-2 text-muted">{a}</p>
               </details>

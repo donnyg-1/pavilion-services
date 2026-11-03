@@ -19,7 +19,7 @@ export function NavLinks() {
         <Link
           key={l.href}
           href={l.href}
-          className={cx("border-b-2 px-3 py-2.5 text-sm font-semibold whitespace-nowrap transition", l.match(pathname) ? "border-pine-700 text-pine-800" : "border-transparent text-muted hover:text-ink")}
+          className={cx("border-b-2 px-3 py-2.5 text-sm font-semibold whitespace-nowrap transition", l.match(pathname) ? "border-navy-700 text-navy-800" : "border-transparent text-muted hover:text-ink")}
         >
           {l.label}
         </Link>

@@ -21,17 +21,17 @@ function getStripe(key: string) {
 const appearance: Appearance = {
   theme: "stripe",
   variables: {
-    colorPrimary: "#1f4d3a",
-    colorText: "#1b2420",
+    colorPrimary: "#262d5f",
+    colorText: "#1c1b19",
     colorDanger: "#b4412f",
-    fontFamily: "'Public Sans', system-ui, sans-serif",
+    fontFamily: "'Bricolage Grotesque', system-ui, sans-serif",
     fontSizeBase: "16px",
     borderRadius: "12px",
     spacingUnit: "4px",
   },
   rules: { ".Input": { border: "1px solid #e3e8de", boxShadow: "none", padding: "12px 14px" }, ".Input:focus": { borderColor: "#2a624a", boxShadow: "0 0 0 4px rgba(42,98,74,0.1)" } },
 };
-const fonts = [{ cssSrc: "https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600&display=swap" }];
+const fonts = [{ cssSrc: "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600&display=swap" }];
 
 // ─── Apple Pay / Google Pay ─────────────────────────────────────────────────
 
@@ -127,7 +127,7 @@ export function MockCard({ register }: { register: (d: CardDriver) => void }) {
     register({ validate: async () => null, save: async () => ({ ref: pm }) });
   }, [pm, register]);
   return (
-    <div className="rounded-xl border border-dashed border-sage-300 bg-sage-50 p-3">
+    <div className="rounded-xl border border-dashed border-stone-300 bg-stone-50 p-3">
       <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
         <Icon name="card" className="size-4" /> Test card (Stripe&apos;s card field appears here once keys are set)
       </p>
@@ -139,7 +139,7 @@ export function MockCard({ register }: { register: (d: CardDriver) => void }) {
             role="radio"
             aria-checked={pm === c.id}
             onClick={() => setPm(c.id)}
-            className={cx("rounded-lg border px-3 py-2 text-left text-sm transition", pm === c.id ? "border-pine-600 bg-white ring-2 ring-pine-600/15" : "border-line bg-white/60 hover:border-sage-300")}
+            className={cx("rounded-lg border px-3 py-2 text-left text-sm transition", pm === c.id ? "border-navy-600 bg-white ring-2 ring-navy-600/15" : "border-line bg-white/60 hover:border-stone-300")}
           >
             <span className="block font-semibold">{c.label}</span>
             <span className="block text-xs text-muted">{c.hint}</span>

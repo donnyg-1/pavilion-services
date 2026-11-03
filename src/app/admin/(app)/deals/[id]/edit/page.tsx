@@ -18,7 +18,7 @@ export default async function EditDealPage({ params }: { params: Promise<{ id: s
   ]);
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <Link href={`/admin/deals/${id}`} className="text-sm font-semibold text-pine-700">← {deal.title}</Link>
+      <Link href={`/admin/deals/${id}`} className="text-sm font-semibold text-navy-700">← {deal.title}</Link>
       <h1 className="text-3xl font-extrabold">Edit deal</h1>
       <DealForm dealId={id} initial={dealToForm(deal)} communities={communities} vendors={vendors} hasBookings={bookings > 0} locked={!!deal.lockedAt} />
     </div>

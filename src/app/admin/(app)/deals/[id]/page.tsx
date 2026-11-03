@@ -39,7 +39,7 @@ export default async function DealAdminPage({ params, searchParams }: { params: 
   return (
     <div className="space-y-5">
       <div>
-        <Link href="/admin" className="text-sm font-semibold text-pine-700">← Deals</Link>
+        <Link href="/admin" className="text-sm font-semibold text-navy-700">← Deals</Link>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
@@ -64,7 +64,7 @@ export default async function DealAdminPage({ params, searchParams }: { params: 
           <Link
             key={key}
             href={`/admin/deals/${id}?tab=${key}`}
-            className={cx("-mb-px border-b-2 px-3 py-2 text-sm font-semibold whitespace-nowrap", tab === key ? "border-pine-700 text-pine-800" : "border-transparent text-muted hover:text-ink")}
+            className={cx("-mb-px border-b-2 px-3 py-2 text-sm font-semibold whitespace-nowrap", tab === key ? "border-navy-700 text-navy-800" : "border-transparent text-muted hover:text-ink")}
           >
             {label}
             {counts[key] ? <span className="ml-1.5 rounded-full bg-honey-50 px-1.5 text-xs text-[#8a6418]">{counts[key]}</span> : null}

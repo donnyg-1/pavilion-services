@@ -21,7 +21,7 @@ export default async function RatePage({ params, searchParams }: { params: Promi
       <PublicHeader community={booking.deal.community.name} />
       <main className="mx-auto max-w-md px-4 py-6">
         <Card className="p-6">
-          <p className="text-center text-sm font-semibold tracking-wide text-sage-600 uppercase">{booking.deal.title}</p>
+          <p className="text-center text-sm font-semibold tracking-wide text-stone-600 uppercase">{booking.deal.title}</p>
           <h1 className="mt-2 text-center text-2xl font-extrabold">How did {booking.deal.vendor.name} do?</h1>
           <p className="mt-1 mb-6 text-center text-muted">Your rating helps us pick the best pros for {booking.deal.community.name}.</p>
           <RatingForm token={token} initialScore={initial} initialComment={booking.rating?.comment ?? ""} vendorName={booking.deal.vendor.name} />

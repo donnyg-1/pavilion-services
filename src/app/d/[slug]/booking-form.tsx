@@ -135,7 +135,7 @@ export function BookingForm(props: Props) {
   if (side?.ok) {
     return (
       <div className="animate-rise py-2 text-center">
-        <div className="mx-auto grid size-12 place-items-center rounded-full bg-pine-100 text-pine-700">
+        <div className="mx-auto grid size-12 place-items-center rounded-full bg-leaf-100 text-leaf-600">
           <Icon name="check" className="size-6" />
         </div>
         <h3 className="mt-3 text-xl font-bold">{side.kind === "review" ? "Thanks, we're checking" : "You're on the waitlist"}</h3>
@@ -207,8 +207,8 @@ export function BookingForm(props: Props) {
             {addOns.map((a) => {
               const on = selected.includes(a.id);
               return (
-                <label key={a.id} className={cx("flex cursor-pointer items-start gap-3 rounded-xl border px-3.5 py-3 transition", on ? "border-pine-600 bg-pine-100/50" : "border-line bg-white hover:border-sage-300")}>
-                  <input type="checkbox" checked={on} onChange={() => setSelected((s) => (on ? s.filter((x) => x !== a.id) : [...s, a.id]))} className="mt-0.5 size-5 shrink-0 accent-pine-700" />
+                <label key={a.id} className={cx("flex cursor-pointer items-start gap-3 rounded-xl border px-3.5 py-3 transition", on ? "border-navy-600 bg-navy-100/50" : "border-line bg-white hover:border-stone-300")}>
+                  <input type="checkbox" checked={on} onChange={() => setSelected((s) => (on ? s.filter((x) => x !== a.id) : [...s, a.id]))} className="mt-0.5 size-5 shrink-0 accent-navy-700" />
                   <span className="flex-1">
                     <span className="block font-semibold">{a.name}</span>
                     {a.description ? <span className="block text-sm text-muted">{a.description}</span> : null}
@@ -275,7 +275,7 @@ export function BookingForm(props: Props) {
             <Textarea id="notes" rows={2} className="min-h-0" placeholder="Gate code, dog in the yard, side gate on the left…" value={notes} onChange={(e) => setNotes(e.target.value)} autoFocus={showNotes && !notes} />
           </Field>
         ) : (
-          <button type="button" onClick={() => setShowNotes(true)} className="text-sm font-semibold text-pine-700">
+          <button type="button" onClick={() => setShowNotes(true)} className="text-sm font-semibold text-navy-700">
             + Add a note for the crew
           </button>
         )}
@@ -290,7 +290,7 @@ export function BookingForm(props: Props) {
         </Button>
         <p className="text-center text-xs leading-relaxed text-muted">
           You won&apos;t be charged today. By booking, you agree to the{" "}
-          <Link href={`/d/${slug}/terms`} target="_blank" className="font-semibold text-pine-700 underline underline-offset-2">
+          <Link href={`/d/${slug}/terms`} target="_blank" className="font-semibold text-navy-700 underline underline-offset-2">
             booking terms
           </Link>{" "}
           and authorize Pavilion to charge your card the final group price after {vendorName} finishes the job.
@@ -304,7 +304,7 @@ export function BookingForm(props: Props) {
 function TextOptIn({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-white px-3.5 py-3">
-      <input type="checkbox" name="smsOptIn" checked={checked} onChange={(e) => onChange(e.target.checked)} className="mt-0.5 size-5 shrink-0 accent-pine-700" />
+      <input type="checkbox" name="smsOptIn" checked={checked} onChange={(e) => onChange(e.target.checked)} className="mt-0.5 size-5 shrink-0 accent-navy-700" />
       <span className="text-sm">
         <span className="block font-semibold">Text me when the crew is on the way</span>
         <span className="block text-muted">Plus your confirmation, a reminder the day before, and any date or payment updates. No marketing texts. Usually 2–5 texts per service. Msg &amp; data rates may apply. Reply STOP to opt out.</span>

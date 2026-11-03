@@ -19,7 +19,7 @@ export default async function CommunitiesPage() {
       <div className="grid gap-3 md:grid-cols-2">
         {communities.map((c) => (
           <Link key={c.id} href={`/admin/communities/${c.id}`}>
-            <Card className="p-4 transition hover:border-sage-300">
+            <Card className="p-4 transition hover:border-stone-300">
               <p className="font-display text-lg font-bold">{c.name}</p>
               <p className="text-sm text-muted">
                 {[c.city, c.managementCompany?.name].filter(Boolean).join(" · ") || "No management company"}

@@ -38,13 +38,13 @@ export function RatingForm({ token, initialScore, initialComment, vendorName }: 
             role="radio"
             aria-checked={score === n}
             onClick={() => pick(n)}
-            className={cx("grid size-14 place-items-center rounded-2xl font-display text-xl font-bold transition", score && n <= score ? "bg-pine-700 text-white" : "bg-sage-100 text-pine-800 hover:bg-sage-200")}
+            className={cx("grid size-14 place-items-center rounded-2xl font-display text-xl font-bold transition", score && n <= score ? "bg-navy-700 text-white" : "bg-stone-100 text-navy-800 hover:bg-stone-200")}
           >
             {n}
           </button>
         ))}
       </div>
-      <p className="h-6 text-center font-semibold text-pine-700">{score ? `${LABELS[score]}${saved ? " · saved" : ""}` : `Tap to rate ${vendorName}`}</p>
+      <p className="h-6 text-center font-semibold text-navy-700">{score ? `${LABELS[score]}${saved ? " · saved" : ""}` : `Tap to rate ${vendorName}`}</p>
       {score ? (
         <form
           className="space-y-3"

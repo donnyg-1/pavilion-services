@@ -12,7 +12,7 @@ export default async function MessagePage({ params }: { params: Promise<{ id: st
   if (!msg) notFound();
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <Link href={msg.dealId ? `/admin/deals/${msg.dealId}?tab=emails` : "/admin/outbox"} className="text-sm font-semibold text-pine-700">← Back</Link>
+      <Link href={msg.dealId ? `/admin/deals/${msg.dealId}?tab=emails` : "/admin/outbox"} className="text-sm font-semibold text-navy-700">← Back</Link>
       <Card className="space-y-1 p-4 text-sm">
         <p className="text-lg font-bold">{msg.subject}</p>
         <p><span className="text-muted">To:</span> {msg.to}</p>
@@ -22,7 +22,7 @@ export default async function MessagePage({ params }: { params: Promise<{ id: st
       {msg.channel === "sms" ? (
         <Card className="p-4">
           <p className="mb-2 text-sm text-muted">Text message · {msg.text.length} characters</p>
-          <p className="max-w-sm rounded-2xl rounded-bl-sm bg-sage-100 px-4 py-3 text-[15px] whitespace-pre-line">{msg.text}</p>
+          <p className="max-w-sm rounded-2xl rounded-bl-sm bg-stone-100 px-4 py-3 text-[15px] whitespace-pre-line">{msg.text}</p>
         </Card>
       ) : (
       <iframe title="Email preview" srcDoc={msg.html.replace("<head>", '<head><base target="_blank">')} sandbox="allow-popups allow-popups-to-escape-sandbox" className="h-[760px] w-full rounded-2xl border border-line bg-white" />

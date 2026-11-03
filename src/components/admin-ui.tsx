@@ -21,7 +21,7 @@ export function ActionForm({ action, children, className, confirm, inline, id, s
     >
       {children}
       {state?.message && !silent ? (
-        <p className={cx("text-sm font-medium", inline ? "mt-1" : "mt-2", state.ok ? "text-pine-700" : "text-danger")} role="status">
+        <p className={cx("text-sm font-medium", inline ? "mt-1" : "mt-2", state.ok ? "text-navy-700" : "text-danger")} role="status">
           {state.message}
         </p>
       ) : null}
@@ -51,7 +51,7 @@ export function CopyField({ value, label }: { value: string; label?: string }) {
           setCopied(true);
           setTimeout(() => setCopied(false), 1500);
         }}
-        className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg bg-sage-100 px-2.5 text-xs font-semibold text-pine-800 hover:bg-sage-200"
+        className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg bg-stone-100 px-2.5 text-xs font-semibold text-navy-800 hover:bg-stone-200"
       >
         <Icon name={copied ? "check" : "copy"} className="size-3.5" />
         {copied ? "Copied" : "Copy"}
@@ -65,7 +65,7 @@ export function SelectAll({ formId }: { formId: string }) {
     <input
       type="checkbox"
       aria-label="Select all"
-      className="size-4 accent-pine-700"
+      className="size-4 accent-navy-700"
       onChange={(e) => {
         document.querySelectorAll<HTMLInputElement>(`input[type=checkbox][form="${formId}"]`).forEach((c) => {
           if (!c.disabled) c.checked = e.target.checked;

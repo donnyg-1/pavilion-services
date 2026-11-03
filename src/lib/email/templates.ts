@@ -7,17 +7,17 @@ import { formatDeadline, formatServiceDate } from "@/lib/dates";
 export type EmailContent = { subject: string; html: string; text: string };
 
 const C = {
-  pine: "#1F4D3A",
-  pineDark: "#163829",
-  sage: "#EEF2EA",
-  sageLine: "#DCE4D5",
-  cream: "#FAF8F3",
-  ink: "#1B2420",
-  muted: "#5B6B62",
+  navy: "#262D5F",
+  navyDark: "#1F2552",
+  stone: "#F3F1EC",
+  stoneLine: "#E9E6DF",
+  page: "#FAF9F6",
+  ink: "#1C1B19",
+  muted: "#6B6963",
 };
 
-const FONT = `'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif`;
-const HEAD = `'Bricolage Grotesque', 'Public Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif`;
+const FONT = `'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif`;
+const HEAD = `'Fraunces', Georgia, 'Times New Roman', serif`;
 
 export function esc(s: string | null | undefined): string {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -26,15 +26,15 @@ export function esc(s: string | null | undefined): string {
 function layout(opts: { preheader: string; body: string; footer?: string }): string {
   return `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Bricolage+Grotesque:wght@400;600&display=swap" rel="stylesheet">
 </head>
-<body style="margin:0;padding:0;background:${C.cream};">
+<body style="margin:0;padding:0;background:${C.page};">
 <span style="display:none;max-height:0;overflow:hidden;opacity:0;">${esc(opts.preheader)}</span>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.cream};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.page};">
 <tr><td align="center" style="padding:24px 12px;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
-    <tr><td style="padding:0 4px 16px;font-family:${HEAD};font-size:20px;font-weight:700;color:${C.pine};letter-spacing:-0.02em;">Pavilion</td></tr>
-    <tr><td style="background:#ffffff;border:1px solid ${C.sageLine};border-radius:16px;padding:28px 24px;font-family:${FONT};font-size:16px;line-height:1.55;color:${C.ink};">
+    <tr><td style="padding:0 4px 16px;font-family:${HEAD};font-size:20px;font-weight:700;color:${C.navy};letter-spacing:-0.02em;">Pavilion</td></tr>
+    <tr><td style="background:#ffffff;border:1px solid ${C.stoneLine};border-radius:16px;padding:28px 24px;font-family:${FONT};font-size:16px;line-height:1.55;color:${C.ink};">
       ${opts.body}
     </td></tr>
     <tr><td style="padding:16px 8px;font-family:${FONT};font-size:12px;line-height:1.5;color:${C.muted};">
@@ -51,7 +51,7 @@ const p = (s: string) => `<p style="margin:0 0 14px;">${s}</p>`;
 const small = (s: string) => `<p style="margin:0 0 10px;font-size:13px;color:${C.muted};">${s}</p>`;
 
 function button(href: string, label: string): string {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:18px 0;"><tr><td style="border-radius:999px;background:${C.pine};">
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:18px 0;"><tr><td style="border-radius:999px;background:${C.navy};">
   <a href="${esc(href)}" style="display:inline-block;padding:13px 24px;font-family:${FONT};font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:999px;">${esc(label)}</a>
   </td></tr></table>`;
 }
@@ -64,11 +64,11 @@ function details(rows: [string, string][]): string {
       <td style="padding:8px 0;font-size:15px;color:${C.ink};vertical-align:top;">${v}</td></tr>`,
     )
     .join("");
-  return `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:6px 0 16px;border-top:1px solid ${C.sageLine};border-bottom:1px solid ${C.sageLine};">${tr}</table>`;
+  return `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:6px 0 16px;border-top:1px solid ${C.stoneLine};border-bottom:1px solid ${C.stoneLine};">${tr}</table>`;
 }
 
 function callout(s: string): string {
-  return `<div style="margin:16px 0;padding:14px 16px;background:${C.sage};border-radius:12px;font-size:15px;">${s}</div>`;
+  return `<div style="margin:16px 0;padding:14px 16px;background:${C.stone};border-radius:12px;font-size:15px;">${s}</div>`;
 }
 
 function toText(lines: (string | null | undefined | false)[]): string {
@@ -140,7 +140,7 @@ export function bookingConfirmed(d: DealContext, b: BookingContext, priceCents: 
       p(`<strong>Your card is saved, not charged.</strong> We charge it only after the job is done.`),
       p(`<strong>Know a neighbor who'd want this?</strong> Every home that books lowers the price for everyone, you included.${referralPitch(d) ? ` And you ${referralPitch(d)!.replace(/^Get/, "get")}` : ""}`),
       button(b.shareUrl, "Share with neighbors"),
-      small(`Plans change? <a href="${esc(b.manageUrl)}" style="color:${C.pine};">View or cancel your booking</a> any time before signups close.`),
+      small(`Plans change? <a href="${esc(b.manageUrl)}" style="color:${C.navy};">View or cancel your booking</a> any time before signups close.`),
       small(esc(d.reserveFundLine)),
     ].join(""),
   });
@@ -235,7 +235,7 @@ export function rescheduled(d: DealContext, b: BookingContext, previousDate: Dat
       h1(`New date: ${formatServiceDate(d.serviceDate)}`),
       p(`${esc(d.title)} is moving from ${formatServiceDate(previousDate)} to <strong>${when(d)}</strong>.${note ? ` ${esc(note)}` : ""}`),
       p(`Your booking and price stay the same. You don't need to do anything.`),
-      small(`Can't make the new date? <a href="${esc(b.manageUrl)}" style="color:${C.pine};">View your booking</a> or reply to this email.`),
+      small(`Can't make the new date? <a href="${esc(b.manageUrl)}" style="color:${C.navy};">View your booking</a> or reply to this email.`),
     ].join(""),
   });
   const text = toText([`New date: ${formatServiceDate(d.serviceDate)}.`, `${d.title} is moving from ${formatServiceDate(previousDate)}.${note ? ` ${note}` : ""}`, "Your booking and price stay the same."]);
@@ -247,7 +247,7 @@ export function receipt(d: DealContext, b: BookingContext, opts: { basePriceCent
   const stars = [1, 2, 3, 4, 5]
     .map(
       (n) =>
-        `<td style="padding:0 4px;"><a href="${esc(opts.ratingUrl(n))}" style="display:inline-block;width:44px;height:44px;line-height:44px;text-align:center;border-radius:12px;background:${C.sage};color:${C.pine};font-family:${HEAD};font-size:18px;font-weight:700;text-decoration:none;">${n}</a></td>`,
+        `<td style="padding:0 4px;"><a href="${esc(opts.ratingUrl(n))}" style="display:inline-block;width:44px;height:44px;line-height:44px;text-align:center;border-radius:12px;background:${C.stone};color:${C.navy};font-family:${HEAD};font-size:18px;font-weight:700;text-decoration:none;">${n}</a></td>`,
     )
     .join("");
   const html = layout({

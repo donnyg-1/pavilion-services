@@ -28,7 +28,7 @@ export function StickyCta({ label, sub }: { label: string; sub: string }) {
 
   return (
     <div className={cx("fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur transition-transform duration-300 sm:hidden", hidden && "translate-y-full")}>
-      <a href="#book" className="flex h-12 items-center justify-between rounded-full bg-pine-700 pr-2 pl-5 font-semibold text-white">
+      <a href="#book" className="flex h-12 items-center justify-between rounded-full bg-navy-700 pr-2 pl-5 font-semibold text-white">
         <span>{label}</span>
         <span className="rounded-full bg-white/15 px-3 py-1.5 text-sm">{sub}</span>
       </a>

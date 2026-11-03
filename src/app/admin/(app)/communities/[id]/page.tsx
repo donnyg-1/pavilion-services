@@ -27,7 +27,7 @@ export default async function CommunityPage({ params, searchParams }: { params: 
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/admin/communities" className="text-sm font-semibold text-pine-700">← Communities</Link>
+        <Link href="/admin/communities" className="text-sm font-semibold text-navy-700">← Communities</Link>
         <h1 className="mt-2 text-3xl font-extrabold">{community.name}</h1>
         <p className="text-muted">
           {activeCount} homes on the address list
@@ -37,7 +37,7 @@ export default async function CommunityPage({ params, searchParams }: { params: 
               {community.deals.map((d, i) => (
                 <span key={d.id}>
                   {i ? ", " : ""}
-                  <Link href={`/admin/deals/${d.id}`} className="font-semibold text-pine-700">{d.title}</Link>
+                  <Link href={`/admin/deals/${d.id}`} className="font-semibold text-navy-700">{d.title}</Link>
                 </span>
               ))}
             </>
@@ -53,17 +53,17 @@ export default async function CommunityPage({ params, searchParams }: { params: 
           </p>
           <ActionForm action={uploadAddresses.bind(null, id)} className="space-y-4">
             <Field label="CSV file" htmlFor="file">
-              <Input id="file" name="file" type="file" accept=".csv,text/csv,text/plain" className="py-2 file:mr-3 file:rounded-full file:border-0 file:bg-sage-100 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-pine-800" />
+              <Input id="file" name="file" type="file" accept=".csv,text/csv,text/plain" className="py-2 file:mr-3 file:rounded-full file:border-0 file:bg-stone-100 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-navy-800" />
             </Field>
             <Field label="…or paste addresses" htmlFor="text">
               <Textarea id="text" name="text" rows={4} placeholder={"address,unit\n1234 N 500 E,\n88 W Willow Creek Dr,"} className="font-mono text-sm" />
             </Field>
             <fieldset className="space-y-1.5 text-sm">
               <label className="flex items-center gap-2">
-                <input type="radio" name="mode" value="append" defaultChecked className="accent-pine-700" /> Add to the existing list
+                <input type="radio" name="mode" value="append" defaultChecked className="accent-navy-700" /> Add to the existing list
               </label>
               <label className="flex items-center gap-2">
-                <input type="radio" name="mode" value="replace" className="accent-pine-700" /> Replace the list (addresses not in the file are removed)
+                <input type="radio" name="mode" value="replace" className="accent-navy-700" /> Replace the list (addresses not in the file are removed)
               </label>
             </fieldset>
             <SubmitButton size="md" pendingText="Uploading…">Upload</SubmitButton>
@@ -86,9 +86,9 @@ export default async function CommunityPage({ params, searchParams }: { params: 
         </div>
         <p className="mt-1 text-sm text-muted">
           {show === "removed" ? (
-            <Link href={`/admin/communities/${id}`} className="font-semibold text-pine-700">Show active</Link>
+            <Link href={`/admin/communities/${id}`} className="font-semibold text-navy-700">Show active</Link>
           ) : inactiveCount ? (
-            <Link href={`/admin/communities/${id}?show=removed`} className="font-semibold text-pine-700">Show {inactiveCount} removed</Link>
+            <Link href={`/admin/communities/${id}?show=removed`} className="font-semibold text-navy-700">Show {inactiveCount} removed</Link>
           ) : null}
           {addresses.length === 250 ? " Showing the first 250. Search to narrow down." : null}
         </p>

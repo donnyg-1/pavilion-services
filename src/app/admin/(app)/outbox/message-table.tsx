@@ -9,7 +9,7 @@ export async function MessageTable({ where }: { where: Prisma.MessageLogWhereInp
   return (
     <Card className="overflow-x-auto">
       <table className="w-full min-w-[720px] text-sm">
-        <thead className="border-b border-line bg-sage-50 text-left text-muted">
+        <thead className="border-b border-line bg-stone-50 text-left text-muted">
           <tr>
             <th className="px-3 py-2.5 font-semibold">Sent</th>
             <th className="px-3 py-2.5 font-semibold">To</th>
@@ -25,12 +25,12 @@ export async function MessageTable({ where }: { where: Prisma.MessageLogWhereInp
             </tr>
           ) : null}
           {messages.map((msg) => (
-            <tr key={msg.id} className="hover:bg-sage-50">
+            <tr key={msg.id} className="hover:bg-stone-50">
               <td className="px-3 py-2.5 whitespace-nowrap text-muted">{formatDateTime(msg.createdAt)}</td>
               <td className="px-3 py-2.5">{msg.to}</td>
               <td className="px-3 py-2.5">
                 {msg.channel === "sms" ? <Badge tone="blue" className="mr-1.5">Text</Badge> : null}
-                <Link href={`/admin/outbox/${msg.id}`} className="font-semibold text-pine-700 hover:underline">
+                <Link href={`/admin/outbox/${msg.id}`} className="font-semibold text-navy-700 hover:underline">
                   {msg.subject}
                 </Link>
               </td>

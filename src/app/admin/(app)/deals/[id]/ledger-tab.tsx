@@ -48,7 +48,7 @@ export async function LedgerTab({ dealId }: { dealId: string }) {
 
       <Card className="overflow-x-auto">
         <table className="w-full min-w-[980px] text-sm tabular-nums">
-          <thead className="border-b border-line bg-sage-50 text-left text-muted">
+          <thead className="border-b border-line bg-stone-50 text-left text-muted">
             <tr>
               <th className="px-3 py-2.5 font-semibold">Date</th>
               <th className="px-3 py-2.5 font-semibold">Home</th>

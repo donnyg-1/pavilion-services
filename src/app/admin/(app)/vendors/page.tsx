@@ -43,7 +43,7 @@ export default async function VendorsPage() {
                     {[v.contactName, v.email, v.phone].filter(Boolean).join(" · ") || "No contact info"} · {v._count.deals} {v._count.deals === 1 ? "deal" : "deals"}
                   </span>
                 </span>
-                <span className="text-sm font-semibold text-pine-700">Edit</span>
+                <span className="text-sm font-semibold text-navy-700">Edit</span>
               </summary>
               <ActionForm action={saveVendor.bind(null, v.id)} className="mt-4 space-y-3">
                 <VendorFields v={v} />

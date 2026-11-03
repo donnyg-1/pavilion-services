@@ -13,7 +13,7 @@ export function CancelBooking({ token, deadline }: { token: string; deadline: st
     return (
       <p className="text-center text-sm text-muted">
         Plans changed?{" "}
-        <button type="button" onClick={() => setConfirming(true)} className="font-semibold text-pine-700 underline underline-offset-2">
+        <button type="button" onClick={() => setConfirming(true)} className="font-semibold text-navy-700 underline underline-offset-2">
           Cancel booking
         </button>{" "}
         (free until {deadline})

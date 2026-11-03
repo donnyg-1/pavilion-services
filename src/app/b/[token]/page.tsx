@@ -49,19 +49,19 @@ export default async function BookingPage({ params, searchParams }: Props) {
       case "pending_setup":
         return { icon: "clock" as const, tone: "bg-honey-50 text-[#8a6418]", title: "Almost there", sub: "We're waiting to hear back from the card page. This usually takes a few seconds." };
       case "booked":
-        return { icon: "check" as const, tone: "bg-pine-100 text-pine-700", title: sp.setup_intent || sp.new ? "You're booked!" : "You're booked", sub: `${deal.vendor.name} will be at your home ${formatServiceDate(deal.serviceDate)}. Your card is saved, not charged.` };
+        return { icon: "check" as const, tone: "bg-leaf-100 text-leaf-600", title: sp.setup_intent || sp.new ? "You're booked!" : "You're booked", sub: `${deal.vendor.name} will be at your home ${formatServiceDate(deal.serviceDate)}. Your card is saved, not charged.` };
       case "completed":
-        return { icon: "clock" as const, tone: "bg-sage-100 text-pine-700", title: "Job complete", sub: "We're processing your payment now." };
+        return { icon: "clock" as const, tone: "bg-stone-100 text-navy-700", title: "Job complete", sub: "We're processing your payment now." };
       case "charged":
-        return { icon: "check" as const, tone: "bg-pine-100 text-pine-700", title: "All done. Thank you!", sub: `Paid ${formatCents(charge?.amountCents ?? 0)}. Your receipt is in your email.` };
+        return { icon: "check" as const, tone: "bg-leaf-100 text-leaf-600", title: "All done. Thank you!", sub: `Paid ${formatCents(charge?.amountCents ?? 0)}. Your receipt is in your email.` };
       case "failed":
         return { icon: "card" as const, tone: "bg-honey-50 text-[#8a6418]", title: "Payment needed", sub: "The job is done, but your card didn't go through. You can pay securely below." };
       case "refunded":
-        return { icon: "check" as const, tone: "bg-sage-100 text-pine-700", title: "Refunded", sub: "We refunded this booking. It usually shows up in 5–10 business days." };
+        return { icon: "check" as const, tone: "bg-stone-100 text-navy-700", title: "Refunded", sub: "We refunded this booking. It usually shows up in 5–10 business days." };
       case "cancelled":
-        return { icon: "x" as const, tone: "bg-sage-100 text-muted", title: "Booking cancelled", sub: "Your card won't be charged." };
+        return { icon: "x" as const, tone: "bg-stone-100 text-muted", title: "Booking cancelled", sub: "Your card won't be charged." };
       case "expired":
-        return { icon: "clock" as const, tone: "bg-sage-100 text-muted", title: "This booking wasn't finished", sub: "The card wasn't saved in time, so the spot was released." };
+        return { icon: "clock" as const, tone: "bg-stone-100 text-muted", title: "This booking wasn't finished", sub: "The card wasn't saved in time, so the spot was released." };
     }
   })();
 
@@ -74,7 +74,7 @@ export default async function BookingPage({ params, searchParams }: Props) {
           <div className={`mx-auto grid size-14 place-items-center rounded-full ${header.tone}`}>
             <Icon name={header.icon} className="size-7" />
           </div>
-          <h1 className="mt-4 text-3xl font-extrabold text-pine-900 sm:text-4xl">{header.title}</h1>
+          <h1 className="mt-4 text-3xl font-extrabold text-ink sm:text-4xl">{header.title}</h1>
           <p className="mx-auto mt-2 max-w-md text-muted">{header.sub}</p>
         </section>
 
@@ -100,7 +100,7 @@ export default async function BookingPage({ params, searchParams }: Props) {
 
         <Card className="divide-y divide-line">
           <div className="p-5">
-            <p className="text-sm font-semibold tracking-wide text-sage-600 uppercase">{deal.title}</p>
+            <p className="text-sm font-semibold tracking-wide text-stone-600 uppercase">{deal.title}</p>
             <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2.5 text-[15px]">
               <dt className="text-muted">Date</dt>
               <dd className="font-semibold">
@@ -185,7 +185,7 @@ export default async function BookingPage({ params, searchParams }: Props) {
 
         <p className="px-2 text-center text-sm text-muted">{fillCopy(deal.reserveFundLine, deal)}</p>
         <p className="text-center text-sm">
-          <Link href={`/d/${deal.slug}/terms`} className="font-semibold text-pine-700">
+          <Link href={`/d/${deal.slug}/terms`} className="font-semibold text-navy-700">
             Booking terms
           </Link>
         </p>

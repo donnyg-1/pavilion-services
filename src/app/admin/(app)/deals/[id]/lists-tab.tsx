@@ -24,7 +24,7 @@ export async function WaitlistTab({ dealId }: { dealId: string }) {
       </div>
       <Card className="overflow-x-auto">
         <table className="w-full min-w-[640px] text-sm">
-          <thead className="border-b border-line bg-sage-50 text-left text-muted">
+          <thead className="border-b border-line bg-stone-50 text-left text-muted">
             <tr>
               <th className="px-3 py-2.5 font-semibold">#</th>
               <th className="px-3 py-2.5 font-semibold">Name</th>

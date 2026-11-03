@@ -22,11 +22,11 @@ export function TextsToggle({ token, initial, phone }: { token: string; initial:
             setMessage(r.message);
           })
         }
-        className="font-semibold text-pine-700 disabled:opacity-50"
+        className="font-semibold text-navy-700 disabled:opacity-50"
       >
         {on ? "Turn off" : "Text me reminders"}
       </button>
-      {message ? <span className="block text-sm text-pine-700">{message}</span> : null}
+      {message ? <span className="block text-sm text-navy-700">{message}</span> : null}
     </span>
   );
 }

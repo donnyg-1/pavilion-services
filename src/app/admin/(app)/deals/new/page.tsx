@@ -15,7 +15,7 @@ export default async function NewDealPage() {
   if (vendors.length === 1) initial.vendorId = vendors[0].id;
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <Link href="/admin" className="text-sm font-semibold text-pine-700">← Deals</Link>
+      <Link href="/admin" className="text-sm font-semibold text-navy-700">← Deals</Link>
       <h1 className="text-3xl font-extrabold">New deal</h1>
       <DealForm dealId={null} initial={initial} communities={communities} vendors={vendors} hasBookings={false} locked={false} />
     </div>

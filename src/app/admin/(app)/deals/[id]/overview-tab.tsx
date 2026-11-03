@@ -161,8 +161,8 @@ export function OverviewTab({ stats }: { stats: Stats }) {
                 return (
                   <div key={n} className="flex items-center gap-2 text-sm">
                     <span className="w-3 text-muted">{n}</span>
-                    <div className="h-2 flex-1 rounded-full bg-sage-100">
-                      <div className="h-2 rounded-full bg-pine-600" style={{ width: `${(count / max) * 100}%` }} />
+                    <div className="h-2 flex-1 rounded-full bg-stone-100">
+                      <div className="h-2 rounded-full bg-navy-600" style={{ width: `${(count / max) * 100}%` }} />
                     </div>
                     <span className="w-6 text-right tabular-nums">{count}</span>
                   </div>

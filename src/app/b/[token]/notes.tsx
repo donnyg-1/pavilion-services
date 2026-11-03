@@ -15,10 +15,10 @@ export function NotesEditor({ token, initial }: { token: string; initial: string
     return (
       <span>
         {notes ? <span className="whitespace-pre-line">{notes} </span> : null}
-        <button type="button" onClick={() => setEditing(true)} className="font-semibold text-pine-700">
+        <button type="button" onClick={() => setEditing(true)} className="font-semibold text-navy-700">
           {notes ? "Edit" : "Add gate code, pets, etc."}
         </button>
-        {message ? <span className="block text-sm text-pine-700">{message}</span> : null}
+        {message ? <span className="block text-sm text-navy-700">{message}</span> : null}
       </span>
     );
   }

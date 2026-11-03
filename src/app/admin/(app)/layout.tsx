@@ -15,7 +15,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const email = config.emailMode();
   const sms = config.smsMode();
   return (
-    <div className="min-h-dvh bg-sage-50">
+    <div className="min-h-dvh bg-stone-50">
       <header className="sticky top-0 z-20 border-b border-line bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:px-6">
           <Logo href="/admin" suffix="admin" />

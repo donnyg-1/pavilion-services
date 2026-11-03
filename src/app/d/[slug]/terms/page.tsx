@@ -84,7 +84,7 @@ export default async function TermsPage({ params }: { params: Promise<{ slug: st
     <>
       <PublicHeader community={deal.community.name} />
       <main className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
-        <Link href={`/d/${slug}`} className="text-sm font-semibold text-pine-700">
+        <Link href={`/d/${slug}`} className="text-sm font-semibold text-navy-700">
           ← Back to {deal.title}
         </Link>
         <h1 className="mt-3 text-3xl font-extrabold">Booking terms</h1>

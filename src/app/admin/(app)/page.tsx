@@ -42,16 +42,16 @@ export default async function AdminHome() {
           <h2 className="text-xl font-bold">Set up your first service day</h2>
           <ol className="mt-3 space-y-2 text-[15px]">
             <li className="flex gap-2">
-              <Icon name={communities ? "check" : "home"} className="size-5 text-pine-700" />
-              <Link href="/admin/communities" className="font-semibold text-pine-700">Add a community and upload its address list</Link>
+              <Icon name={communities ? "check" : "home"} className="size-5 text-navy-700" />
+              <Link href="/admin/communities" className="font-semibold text-navy-700">Add a community and upload its address list</Link>
             </li>
             <li className="flex gap-2">
-              <Icon name={vendors ? "check" : "truck"} className="size-5 text-pine-700" />
-              <Link href="/admin/vendors" className="font-semibold text-pine-700">Add the vendor</Link>
+              <Icon name={vendors ? "check" : "truck"} className="size-5 text-navy-700" />
+              <Link href="/admin/vendors" className="font-semibold text-navy-700">Add the vendor</Link>
             </li>
             <li className="flex gap-2">
-              <Icon name="calendar" className="size-5 text-pine-700" />
-              <Link href="/admin/deals/new" className="font-semibold text-pine-700">Create the deal</Link>
+              <Icon name="calendar" className="size-5 text-navy-700" />
+              <Link href="/admin/deals/new" className="font-semibold text-navy-700">Create the deal</Link>
             </li>
           </ol>
         </Card>
@@ -59,11 +59,11 @@ export default async function AdminHome() {
         <div className="grid gap-4 md:grid-cols-2">
           {rows.map(({ deal, v }) => (
             <Link key={deal.id} href={`/admin/deals/${deal.id}`} className="group">
-              <Card className="h-full p-5 transition group-hover:border-sage-300 group-hover:shadow-sm">
+              <Card className="h-full p-5 transition group-hover:border-stone-300 group-hover:shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm text-muted">{deal.community.name}</p>
-                    <h2 className="text-xl font-bold group-hover:text-pine-700">{deal.title}</h2>
+                    <h2 className="text-xl font-bold group-hover:text-navy-700">{deal.title}</h2>
                     <p className="text-sm text-muted">
                       {deal.vendor.name} · {formatServiceDate(deal.serviceDate, "short")}
                     </p>

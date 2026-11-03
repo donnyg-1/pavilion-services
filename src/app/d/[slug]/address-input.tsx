@@ -81,7 +81,7 @@ export function AddressInput({ slug, value, onChange, invalid }: { slug: string;
         }}
       />
       {showList ? (
-        <ul id={listId} role="listbox" className="absolute inset-x-0 top-full z-20 mt-1.5 overflow-hidden rounded-xl border border-line bg-white py-1 shadow-lg shadow-pine-900/10">
+        <ul id={listId} role="listbox" className="absolute inset-x-0 top-full z-20 mt-1.5 overflow-hidden rounded-xl border border-line bg-white py-1 shadow-lg shadow-navy-900/10">
           {suggestions.map((s, i) => (
             <li
               key={s}
@@ -90,9 +90,9 @@ export function AddressInput({ slug, value, onChange, invalid }: { slug: string;
               aria-selected={i === active}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => pick(s)}
-              className={cx("flex cursor-pointer items-center gap-2.5 px-3.5 py-2.5 text-[15px]", i === active ? "bg-sage-100" : "hover:bg-sage-50")}
+              className={cx("flex cursor-pointer items-center gap-2.5 px-3.5 py-2.5 text-[15px]", i === active ? "bg-stone-100" : "hover:bg-stone-50")}
             >
-              <Icon name="home" className="size-4 shrink-0 text-pine-600" />
+              <Icon name="home" className="size-4 shrink-0 text-navy-600" />
               {s}
             </li>
           ))}
