@@ -6,9 +6,10 @@ import { addDays, isoDate, mountainToday } from "@/lib/dates";
 import { sendEmail } from "@/lib/email/send";
 import * as T from "@/lib/email/templates";
 import { isTextingHours } from "@/lib/domain/sms";
+import { vendorReadiness } from "@/lib/domain/vendor";
 import { textResident } from "@/lib/sms/send";
 import * as S from "@/lib/sms/templates";
-import { bookingContext, bookingInclude, countBookings, dealContext, dealInclude, expireStaleHolds, lockDealIfDue, viewDeal } from "./deals";
+import { bookingContext, bookingInclude, countBookings, dealContext, dealInclude, emailRouteToVendor, expireStaleHolds, lockDealIfDue, viewDeal } from "./deals";
 
 // ─── Address list import ────────────────────────────────────────────────────
 
@@ -98,7 +99,13 @@ export async function rescheduleDeal(dealId: string, newDate: Date, note: string
     await sendEmail({ to: b.resident.email, template: "rescheduled", dealId, bookingId: b.id, ...T.rescheduled(ctx, bookingContext(updated, b), previous, note) });
     await textResident({ resident: b.resident, template: "rescheduled", dealId, bookingId: b.id, body: S.rescheduled(ctx, bookingContext(updated, b), note) });
   }
-  return { ok: true as const, message: `Moved to the new date and emailed ${bookings.length} ${bookings.length === 1 ? "home" : "homes"}.` };
+  // The vendor already has a route list with the old date on it.
+  let vendorNote = "";
+  if (updated.lockedAt) {
+    const sent = await emailRouteToVendor(dealId, "updated");
+    vendorNote = sent.ok ? " Sent the vendor an updated route list." : " The vendor has no email on file, so tell them yourself.";
+  }
+  return { ok: true as const, message: `Moved to the new date and emailed ${bookings.length} ${bookings.length === 1 ? "home" : "homes"}.${vendorNote}` };
 }
 
 export async function closeSignupsNow(dealId: string) {
@@ -141,6 +148,14 @@ export async function runDailyJobs(now = new Date()) {
     }
   }
   return { locked: due.length, reminders };
+}
+
+// ─── Vendors ────────────────────────────────────────────────────────────────
+
+/** The vendor onboarding checklist, checked against a deal's dates when there is one. */
+export async function readinessForVendor(vendorId: string, dates?: { serviceDate: Date; backupDate: Date | null }) {
+  const vendor = await db.vendor.findUniqueOrThrow({ where: { id: vendorId } });
+  return vendorReadiness(vendor, mountainToday(), dates);
 }
 
 // ─── Day of service ────────────────────────────────────────────────────────
@@ -206,5 +221,6 @@ export async function dealStats(dealId: string) {
     },
     waitlist,
     openReviews,
+    vendorReadiness: vendorReadiness(deal.vendor, mountainToday(), deal),
   };
 }

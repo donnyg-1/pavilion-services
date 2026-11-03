@@ -4,7 +4,7 @@ import { isoDate } from "@/lib/dates";
 import { routeSortKey } from "@/lib/domain/address";
 import { toCsv } from "@/lib/domain/csv";
 import { SOURCE_LABELS } from "@/lib/services/admin";
-import { bookingAddress, bookingInclude } from "@/lib/services/deals";
+import { bookingAddress, bookingInclude, routeCsv, routeStops } from "@/lib/services/deals";
 
 const dollars = (c: number | null | undefined) => (c == null ? "" : (c / 100).toFixed(2));
 
@@ -14,11 +14,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const deal = await db.deal.findUnique({ where: { id }, include: { community: true, vendor: true } });
   if (!deal) return new Response("Not found", { status: 404 });
 
+  if (kind === "route") {
+    const filename = `${deal.slug}-route-${isoDate(new Date())}.csv`;
+    return new Response(routeCsv(await routeStops(id)), { headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="${filename}"` } });
+  }
+
   let rows: (string | number | null)[][];
-  if (kind === "route" || kind === "bookings") {
-    const statuses = kind === "route" ? ["booked", "completed", "charged", "failed"] : undefined;
+  if (kind === "bookings") {
     const bookings = await db.booking.findMany({
-      where: { dealId: id, ...(statuses ? { status: { in: statuses as never } } : {}) },
+      where: { dealId: id },
       include: { ...bookingInclude, charges: { orderBy: { createdAt: "desc" }, take: 1 }, rating: true, referredBy: { select: { resident: { select: { name: true } } } } },
     });
     bookings.sort((a, b) => {
@@ -26,30 +30,24 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       const [sb, nb] = routeSortKey(b.communityAddress.normalized);
       return sa === sb ? na - nb : sa.localeCompare(sb);
     });
-    rows =
-      kind === "route"
-        ? [
-            ["Stop", "Address", "Name", "Phone", "Add-ons", "Notes for crew"],
-            ...bookings.map((b, i) => [i + 1, bookingAddress(b), b.resident.name, b.resident.phone, b.addOns.map((a) => a.addOn.name).join("; "), b.notes]),
-          ]
-        : [
-            ["Address", "Name", "Email", "Phone", "Status", "Source", "Referred by", "Add-ons", "Notes", "Booked at", "Amount", "Refunded", "Rating"],
-            ...bookings.map((b) => [
-              bookingAddress(b),
-              b.resident.name,
-              b.resident.email,
-              b.resident.phone,
-              b.status,
-              SOURCE_LABELS[b.source],
-              b.referredBy?.resident.name ?? "",
-              b.addOns.map((a) => `${a.addOn.name} (${dollars(a.priceCents)})`).join("; "),
-              b.notes,
-              (b.bookedAt ?? b.createdAt).toISOString(),
-              dollars(b.charges[0]?.amountCents),
-              dollars(b.charges[0]?.refundedCents),
-              b.rating?.score ?? "",
-            ]),
-          ];
+    rows = [
+      ["Address", "Name", "Email", "Phone", "Status", "Source", "Referred by", "Add-ons", "Notes", "Booked at", "Amount", "Refunded", "Rating"],
+      ...bookings.map((b) => [
+        bookingAddress(b),
+        b.resident.name,
+        b.resident.email,
+        b.resident.phone,
+        b.status,
+        SOURCE_LABELS[b.source],
+        b.referredBy?.resident.name ?? "",
+        b.addOns.map((a) => `${a.addOn.name} (${dollars(a.priceCents)})`).join("; "),
+        b.notes,
+        (b.bookedAt ?? b.createdAt).toISOString(),
+        dollars(b.charges[0]?.amountCents),
+        dollars(b.charges[0]?.refundedCents),
+        b.rating?.score ?? "",
+      ]),
+    ];
   } else if (kind === "ledger") {
     const entries = await db.ledgerEntry.findMany({ where: { dealId: id }, include: { booking: { include: { communityAddress: true, resident: true } } }, orderBy: { createdAt: "asc" } });
     rows = [

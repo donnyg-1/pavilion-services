@@ -29,10 +29,10 @@ export function ActionForm({ action, children, className, confirm, inline, id, s
   );
 }
 
-export function SubmitButton({ children, pendingText, variant = "primary", size = "sm", className, form, name, value }: { children: ReactNode; pendingText?: string; variant?: "primary" | "secondary" | "ghost" | "danger" | "light"; size?: "sm" | "md" | "lg"; className?: string; form?: string; name?: string; value?: string }) {
+export function SubmitButton({ children, pendingText, variant = "primary", size = "sm", className, form, name, value, disabled }: { children: ReactNode; pendingText?: string; variant?: "primary" | "secondary" | "ghost" | "danger" | "light"; size?: "sm" | "md" | "lg"; className?: string; form?: string; name?: string; value?: string; disabled?: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" disabled={pending} className={buttonClass(variant, size, className)} form={form} name={name} value={value}>
+    <button type="submit" disabled={pending || disabled} className={buttonClass(variant, size, className)} form={form} name={name} value={value}>
       {pending ? (pendingText ?? "Working…") : children}
     </button>
   );

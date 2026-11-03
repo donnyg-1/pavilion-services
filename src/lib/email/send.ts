@@ -12,6 +12,8 @@ export type SendEmailInput = EmailContent & {
   bookingId?: string | null;
   /** Skip sending if a message with this key was already sent (reminders, tier-unlock blasts). */
   dedupeKey?: string;
+  /** Text attachments, e.g. the vendor's route CSV. Not stored in the Outbox. */
+  attachments?: { filename: string; content: string }[];
 };
 
 /**
@@ -37,6 +39,7 @@ export async function sendEmail(input: SendEmailInput): Promise<void> {
         subject: input.subject,
         html: input.html,
         text: input.text,
+        attachments: input.attachments,
       });
       if (res.error) {
         status = "failed";

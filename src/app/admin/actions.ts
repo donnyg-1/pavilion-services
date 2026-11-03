@@ -5,14 +5,14 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { endAdminSession, passwordMatches, requireAdmin, startAdminSession } from "@/lib/auth";
-import { mountainLocalToUtc, parseIsoDate } from "@/lib/dates";
+import { mountainLocalToUtc, mountainToday, parseIsoDate } from "@/lib/dates";
 import { validateRates } from "@/lib/domain/ledger";
 import { parseDollars, parsePercent } from "@/lib/domain/money";
 import { validateTiers } from "@/lib/domain/pricing";
 import * as A from "@/lib/services/admin";
 import { cancelBooking, notifyWaitlist } from "@/lib/services/booking";
 import { completeAndCharge, refundBooking, retryCharge } from "@/lib/services/charging";
-import { dealInclude } from "@/lib/services/deals";
+import { dealInclude, emailRouteToVendor } from "@/lib/services/deals";
 import type { ActionResult } from "@/components/admin-ui";
 import { setFlash } from "@/lib/flash";
 
@@ -122,6 +122,13 @@ export async function saveDeal(dealId: string | null, data: DealFormData): Promi
   const clash = await db.deal.findUnique({ where: { slug } });
   if (clash && clash.id !== dealId) errors.push(`The link name "${slug}" is taken.`);
 
+  // Opening signups (or switching an open deal to another vendor) needs that vendor's paperwork on file.
+  const before = dealId ? await db.deal.findUnique({ where: { id: dealId }, select: { status: true, vendorId: true } }) : null;
+  if (data.status === "open" && data.vendorId && serviceDate && (before?.status !== "open" || before.vendorId !== data.vendorId)) {
+    const r = await A.readinessForVendor(data.vendorId, { serviceDate, backupDate });
+    if (!r.ready) errors.push(`This vendor isn't ready for bookings yet. Missing: ${r.missing.join(", ")}. Save as a draft, or finish their checklist under Vendors.`);
+  }
+
   if (errors.length) return { ok: false, errors: [...new Set(errors)] };
 
   const fields = {
@@ -175,6 +182,11 @@ export async function saveDeal(dealId: string | null, data: DealFormData): Promi
 
 export async function setDealStatus(dealId: string, status: "draft" | "open" | "completed" | "archived"): Promise<ActionResult> {
   await requireAdmin();
+  if (status === "open") {
+    const deal = await db.deal.findUniqueOrThrow({ where: { id: dealId } });
+    const r = await A.readinessForVendor(deal.vendorId, deal);
+    if (!r.ready) return { ok: false, message: `Finish this vendor's checklist first. Missing: ${r.missing.join(", ")}.` };
+  }
   await db.deal.update({ where: { id: dealId }, data: { status } });
   revalidatePath(`/admin/deals/${dealId}`);
   return { ok: true, message: `Deal is now ${status}.` };
@@ -256,6 +268,14 @@ export async function adminCancel(bookingId: string, dealId: string): Promise<Ac
 export async function textOnTheWay(bookingId: string, dealId: string): Promise<ActionResult> {
   await requireAdmin();
   const result = await A.sendOnTheWay(bookingId);
+  await setFlash(result);
+  revalidatePath(`/admin/deals/${dealId}`);
+  return result;
+}
+
+export async function emailRoute(dealId: string): Promise<ActionResult> {
+  await requireAdmin();
+  const result = await emailRouteToVendor(dealId, "updated");
   await setFlash(result);
   revalidatePath(`/admin/deals/${dealId}`);
   return result;
@@ -350,13 +370,33 @@ const vendorSchema = z.object({
   contactName: z.string().trim().optional(),
   email: z.union([z.literal(""), z.string().trim().email("Enter a valid email")]).optional(),
   phone: z.string().trim().optional(),
+  insuranceExpiresAt: z.string().optional(),
+  insuranceNote: z.string().trim().max(300).optional(),
+  agreementSignedAt: z.string().optional(),
+  payoutDetails: z.literal("on").optional(),
 });
 
 export async function saveVendor(vendorId: string | null, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireAdmin();
   const parsed = vendorSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0].message };
-  const data = { name: parsed.data.name, contactName: parsed.data.contactName || null, email: parsed.data.email || null, phone: parsed.data.phone || null };
+  const f = parsed.data;
+  const insuranceExpiresAt = f.insuranceExpiresAt ? parseIsoDate(f.insuranceExpiresAt) : null;
+  const agreementSignedAt = f.agreementSignedAt ? parseIsoDate(f.agreementSignedAt) : null;
+  if (f.insuranceExpiresAt && !insuranceExpiresAt) return { ok: false, message: "Insurance expiration date is invalid." };
+  if (f.agreementSignedAt && !agreementSignedAt) return { ok: false, message: "Agreement date is invalid." };
+  const existing = vendorId ? await db.vendor.findUniqueOrThrow({ where: { id: vendorId } }) : null;
+  const data = {
+    name: f.name,
+    contactName: f.contactName || null,
+    email: f.email || null,
+    phone: f.phone || null,
+    insuranceExpiresAt,
+    insuranceNote: f.insuranceNote ?? "",
+    agreementSignedAt,
+    // Keep the original date when the box stays ticked.
+    payoutDetailsAt: f.payoutDetails ? (existing?.payoutDetailsAt ?? parseIsoDate(mountainToday())) : null,
+  };
   if (vendorId) await db.vendor.update({ where: { id: vendorId }, data });
   else await db.vendor.create({ data });
   revalidatePath("/admin/vendors");

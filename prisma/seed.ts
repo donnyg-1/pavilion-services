@@ -35,7 +35,20 @@ async function main() {
     data: addresses.map((raw) => ({ communityId: community.id, raw, normalized: normalizeAddress(raw)!.key })),
   });
 
-  const vendor = await db.vendor.create({ data: { name: "Example Gutter Co.", contactName: "Sam Placeholder", email: "crew@example.com", phone: "(801) 555-0142" } });
+  const day = (iso: string) => new Date(`${iso}T00:00:00Z`);
+  const vendor = await db.vendor.create({
+    data: {
+      name: "Example Gutter Co.",
+      contactName: "Sam Placeholder",
+      email: "crew@example.com",
+      phone: "(801) 555-0142",
+      // Onboarding checklist already complete so the sample deal can take bookings.
+      insuranceExpiresAt: day(addDays(mountainToday(), 365)),
+      insuranceNote: "Sample certificate",
+      agreementSignedAt: day(mountainToday()),
+      payoutDetailsAt: day(mountainToday()),
+    },
+  });
 
   const service = addDays(mountainToday(), 21);
   const deal = await db.deal.create({

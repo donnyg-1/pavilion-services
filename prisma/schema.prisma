@@ -58,6 +58,13 @@ model Vendor {
   email           String?
   phone           String?
   stripeAccountId String? // (M2) Connect payouts
+
+  // Onboarding checklist. Signups can't open until all three are on file.
+  insuranceExpiresAt DateTime? @db.Date // from their certificate of insurance
+  insuranceNote      String    @default("") // carrier, policy number, where the certificate is saved
+  agreementSignedAt  DateTime? @db.Date
+  payoutDetailsAt    DateTime? @db.Date // when we received their bank details
+
   deals           Deal[]
   createdAt       DateTime @default(now())
 }

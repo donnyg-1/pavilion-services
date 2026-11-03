@@ -77,7 +77,7 @@ export default async function TermsPage({ params }: { params: Promise<{ slug: st
         `Message and data rates may apply. Reply STOP to any text to opt out, or turn texts off on your booking page. Reply HELP for help. Ticking the box isn't required to book. Carriers aren't liable for delayed or undelivered messages.`,
       ],
     ],
-    ["Your information", [`We use your name, email, phone and address only to book and complete this service, send updates about it, and take payment. We share your address and notes with the service company so they can do the job. We never show your name or address to other residents. We never sell or share your phone number or text consent with anyone for their marketing.`]],
+    ["Your information", [`We use your name, email, phone and address only to book and complete this service, send updates about it, and take payment. We share your name, address, phone number and notes with the service company so they can do the job. We never show your name or address to other residents. We never sell or share your phone number or text consent with anyone for their marketing.`]],
   ];
 
   return (

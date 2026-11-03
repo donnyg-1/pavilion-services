@@ -71,6 +71,17 @@ How payments work:
 
 Set `RESEND_API_KEY` and `EMAIL_FROM`. Until you verify a sending domain in Resend, you can only send to your own address from `onboarding@resend.dev`. Every email is still saved to the Outbox either way.
 
+## Vendors
+
+Each vendor has an onboarding checklist under **Vendors**:
+- insurance expiration date, from their certificate of insurance
+- the date they signed the vendor agreement
+- whether you've received their bank details
+
+Signups can't open for a deal until all three are on file and the insurance covers the service day. You get a warning if the insurance lapses before the rain date.
+
+When signups close, the vendor gets an email with the route list. Homes are in driving order, with names, phone numbers, add-ons and crew notes, and the same list is attached as a CSV. Staff can resend it from the Bookings tab, for example after a cancellation. It's also re-sent automatically when the service day moves.
+
 ## Texts (Twilio)
 
 Residents who tick "Text me when the crew is on the way" get:

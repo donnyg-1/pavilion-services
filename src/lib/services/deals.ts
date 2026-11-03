@@ -5,6 +5,8 @@ import { holdsSpot, signupWindow, spotsLeft, type SignupWindow } from "@/lib/dom
 import { currentPriceCents, nextTier, referralsUntilCap, tierForCount } from "@/lib/domain/pricing";
 import { sendEmail } from "@/lib/email/send";
 import * as T from "@/lib/email/templates";
+import { routeSortKey } from "@/lib/domain/address";
+import { toCsv } from "@/lib/domain/csv";
 
 export const dealInclude = {
   community: true,
@@ -151,7 +153,44 @@ export async function lockDealIfDue(dealId: string, now = new Date()): Promise<b
       ...T.signupsClosed(ctx, bookingContext(deal, b), price, referral),
     });
   }
+  await emailRouteToVendor(dealId, "signups_closed");
   return true;
+}
+
+// ─── Vendor route list ──────────────────────────────────────────────────────
+
+/** Booked homes in driving order (street, then house number), for the crew. */
+export async function routeStops(dealId: string): Promise<T.RouteStop[]> {
+  const bookings = await db.booking.findMany({ where: { dealId, status: { in: ["booked", "completed", "charged", "failed"] } }, include: bookingInclude });
+  bookings.sort((a, b) => {
+    const [sa, na] = routeSortKey(a.communityAddress.normalized);
+    const [sb, nb] = routeSortKey(b.communityAddress.normalized);
+    return sa === sb ? na - nb : sa.localeCompare(sb);
+  });
+  return bookings.map((b, i) => ({ stop: i + 1, address: bookingAddress(b), name: b.resident.name, phone: b.resident.phone, addOns: b.addOns.map((a) => a.addOn.name), notes: b.notes }));
+}
+
+export function routeCsv(stops: T.RouteStop[]): string {
+  return toCsv([["Stop", "Address", "Name", "Phone", "Add-ons", "Notes for crew"], ...stops.map((s) => [s.stop, s.address, s.name, s.phone, s.addOns.join("; "), s.notes])]);
+}
+
+/**
+ * Emails the vendor the route list (with a CSV attached). Sent automatically when signups
+ * close, and again whenever staff press "Email route list" (e.g. after a cancellation).
+ */
+export async function emailRouteToVendor(dealId: string, reason: "signups_closed" | "updated") {
+  const deal = await db.deal.findUniqueOrThrow({ where: { id: dealId }, include: dealInclude });
+  if (!deal.vendor.email) return { ok: false as const, message: `${deal.vendor.name} has no email on file. Add one under Vendors.` };
+  const stops = await routeStops(dealId);
+  await sendEmail({
+    to: deal.vendor.email,
+    template: "vendor_route",
+    dealId,
+    dedupeKey: reason === "signups_closed" ? `route:${dealId}:${deal.lockedAt?.toISOString()}` : undefined,
+    attachments: [{ filename: `${deal.slug}-route.csv`, content: routeCsv(stops) }],
+    ...T.vendorRoute(dealContext(deal), stops, { contactName: deal.vendor.contactName, updated: reason === "updated" }),
+  });
+  return { ok: true as const, message: `Emailed the route list (${stops.length} ${stops.length === 1 ? "home" : "homes"}) to ${deal.vendor.email}.` };
 }
 
 /** Marks abandoned card-saving sessions as expired so they stop showing as pending. */

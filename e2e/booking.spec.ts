@@ -84,6 +84,11 @@ test("resident books, admin charges, ledger records it", async ({ page, browser 
     await expect(admin.getByText("Signups closed and the price is locked.")).toBeVisible();
   }
   await admin.goto(`${dealUrl}?tab=bookings&status=booked`);
+
+  // Closing signups emailed the vendor their route list; staff can resend it.
+  await admin.getByRole("button", { name: "Email route list to vendor" }).click();
+  await expect(admin.getByText(/Emailed the route list \(\d+ homes?\) to crew@example.com/)).toBeVisible();
+
   const row = admin.locator("tr").filter({ hasText: email });
   await row.getByRole("button", { name: "Text: crew on the way" }).click();
   await expect(admin.getByText("Texted E2E Resident: crew on the way.")).toBeVisible();
@@ -93,8 +98,10 @@ test("resident books, admin charges, ledger records it", async ({ page, browser 
   await admin.goto(`${dealUrl}?tab=ledger`);
   await expect(admin.locator("tr", { hasText: "E2E Resident" }).first()).toBeVisible();
 
-  // Both texts this resident got are in the Outbox.
+  // Both texts this resident got are in the Outbox, next to the vendor's route emails.
   await admin.goto("/admin/outbox");
+  await expect(admin.locator("tr", { hasText: "crew@example.com" }).filter({ hasText: /^.*Route list: Gutter Day/ }).first()).toBeVisible();
+  await expect(admin.locator("tr", { hasText: "Updated route list: Gutter Day" }).first()).toBeVisible();
   const texts = admin.locator("tr", { hasText: "+18015550111" });
   await expect(texts.filter({ hasText: "booking confirmed" })).toHaveCount(1);
   await expect(texts.filter({ hasText: "on the way" })).toHaveCount(1);
@@ -118,4 +125,26 @@ test("the referrer is charged $3 less", async ({ browser }) => {
   await expect(admin.getByText(/Charged \$/)).toBeVisible();
   await admin.goto(`${dealUrl}?tab=ledger`);
   await expect(admin.getByText("after -$3.00 referral").or(admin.getByText("after −$3.00 referral")).first()).toBeVisible();
+});
+
+test("a vendor with missing paperwork is flagged", async ({ page }) => {
+  await page.goto("/admin/login");
+  await page.fill("#password", process.env.ADMIN_PASSWORD ?? "pavilion");
+  await page.click("button[type=submit]");
+  await page.waitForURL((u) => !u.pathname.includes("login"));
+  await page.goto("/admin/vendors");
+
+  const card = page.locator("details", { hasText: "Example Gutter Co." });
+  await expect(card.getByText("Ready", { exact: true })).toBeVisible();
+  await card.locator("summary").click();
+  const agreement = card.getByLabel("Agreement signed");
+  const signed = await agreement.inputValue();
+  await agreement.fill("");
+  await card.getByRole("button", { name: "Save" }).click();
+  await expect(card.getByText("Missing: Signed vendor agreement")).toBeVisible();
+
+  // Put it back for the next run.
+  await agreement.fill(signed);
+  await card.getByRole("button", { name: "Save" }).click();
+  await expect(card.getByText("Ready", { exact: true })).toBeVisible();
 });

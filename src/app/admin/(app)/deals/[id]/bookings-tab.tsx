@@ -9,7 +9,7 @@ import { routeSortKey } from "@/lib/domain/address";
 import { SOURCE_LABELS } from "@/lib/services/admin";
 import { bookingAddress, bookingInclude, REFERRAL_STATUSES } from "@/lib/services/deals";
 import { referralCreditCents } from "@/lib/domain/pricing";
-import { adminCancel, chargeBooking, chargeSelected, refund, retryBookingCharge, textOnTheWay } from "../../../actions";
+import { adminCancel, chargeBooking, chargeSelected, emailRoute, refund, retryBookingCharge, textOnTheWay } from "../../../actions";
 import { bookingBadge } from "../../badges";
 
 const FILTERS = ["all", "booked", "charged", "failed", "refunded", "cancelled", "pending_setup", "expired"] as const;
@@ -46,9 +46,16 @@ export async function BookingsTab({ dealId, status }: { dealId: string; status?:
             </Link>
           ))}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {canCharge ? (
+            <ActionForm action={emailRoute.bind(null, dealId)} silent confirm="Email the current route list to the vendor?" inline>
+              <SubmitButton variant="secondary" pendingText="Emailing…">
+                Email route list to vendor
+              </SubmitButton>
+            </ActionForm>
+          ) : null}
           <a href={`/admin/deals/${dealId}/export/route`} className={buttonClass("secondary", "sm")}>
-            Route CSV for vendor
+            Route CSV
           </a>
           <a href={`/admin/deals/${dealId}/export/bookings`} className={buttonClass("secondary", "sm")}>
             All bookings CSV

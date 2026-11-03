@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { ActionForm, CopyField, SubmitButton } from "@/components/admin-ui";
 import { TierLadder, TierProgress } from "@/components/tier-ladder";
-import { Card, Input, Notice, Stat } from "@/components/ui";
+import { Card, Icon, Input, Notice, Stat } from "@/components/ui";
 import { url } from "@/lib/config";
 import { formatDateTime, formatDeadline, formatServiceDate, isoDate } from "@/lib/dates";
 import { bpsToPercent, formatCents } from "@/lib/domain/money";
@@ -111,8 +112,9 @@ export function OverviewTab({ stats }: { stats: Stats }) {
             {deal.status === "draft" ? (
               <>
                 <p className="text-sm text-muted">Draft. Only you can see the page.</p>
+                <VendorChecklist name={deal.vendor.name} readiness={stats.vendorReadiness} />
                 <ActionForm action={setDealStatus.bind(null, deal.id, "open")}>
-                  <SubmitButton>Open signups</SubmitButton>
+                  <SubmitButton disabled={!stats.vendorReadiness.ready}>Open signups</SubmitButton>
                 </ActionForm>
               </>
             ) : view.window === "open" ? (
@@ -133,6 +135,15 @@ export function OverviewTab({ stats }: { stats: Stats }) {
               <p className="text-sm text-muted">This deal is {deal.status}.</p>
             )}
           </Card>
+
+          {deal.status === "open" && (stats.vendorReadiness.missing.length || stats.vendorReadiness.warnings.length) ? (
+            <Notice tone="warn" title={`Check ${deal.vendor.name}'s paperwork`}>
+              {[...stats.vendorReadiness.missing, ...stats.vendorReadiness.warnings].join(". ")}.{" "}
+              <Link href="/admin/vendors" className="font-semibold underline">
+                Update it under Vendors
+              </Link>
+            </Notice>
+          ) : null}
 
           <Card className="space-y-3 p-5">
             <h2 className="text-lg font-bold">Weather reschedule</h2>
@@ -172,6 +183,40 @@ export function OverviewTab({ stats }: { stats: Stats }) {
           </Card>
         </div>
       </div>
+    </div>
+  );
+}
+
+function VendorChecklist({ name, readiness }: { name: string; readiness: Stats["vendorReadiness"] }) {
+  const items = [
+    ["Insurance certificate", !readiness.missing.some((m) => m.startsWith("Insurance"))],
+    ["Signed vendor agreement", !readiness.missing.includes("Signed vendor agreement")],
+    ["Bank details for payouts", !readiness.missing.includes("Bank details for payouts")],
+  ] as const;
+  return (
+    <div className="rounded-2xl bg-stone-50 p-3.5 text-sm">
+      <p className="font-semibold">{readiness.ready ? `${name} is ready` : `Before ${name} can take bookings`}</p>
+      <ul className="mt-2 space-y-1.5">
+        {items.map(([label, done]) => (
+          <li key={label} className="flex items-center gap-2">
+            <span className={done ? "grid size-5 place-items-center rounded-full bg-leaf-100 text-leaf-600" : "size-5 rounded-full border-2 border-stone-300"}>
+              {done ? <Icon name="check" className="size-3.5" /> : null}
+            </span>
+            <span className={done ? "text-muted" : ""}>{label}</span>
+          </li>
+        ))}
+      </ul>
+      {readiness.missing.filter((m) => m.startsWith("Insurance ")).map((m) => (
+        <p key={m} className="mt-2 text-danger">{m}.</p>
+      ))}
+      {readiness.warnings.map((w) => (
+        <p key={w} className="mt-2 text-[#8a6418]">{w}.</p>
+      ))}
+      {!readiness.ready ? (
+        <Link href="/admin/vendors" className="mt-2 inline-block font-semibold text-navy-700">
+          Finish the checklist →
+        </Link>
+      ) : null}
     </div>
   );
 }

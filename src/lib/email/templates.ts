@@ -435,3 +435,60 @@ export function referralEarned(d: DealContext, b: BookingContext, r: Referral): 
   ]);
   return { subject, html, text };
 }
+
+// ─── Vendor ─────────────────────────────────────────────────────────────────
+
+export type RouteStop = { stop: number; address: string; name: string; phone: string; addOns: string[]; notes: string };
+
+export function vendorRoute(d: DealContext, stops: RouteStop[], opts: { contactName: string | null; updated: boolean }): EmailContent {
+  const n = stops.length;
+  const homes = `${n} ${n === 1 ? "home" : "homes"}`;
+  const subject = `${opts.updated ? "Updated route list" : "Route list"}: ${d.title} on ${formatServiceDate(d.serviceDate, "short")} (${homes})`;
+  const addOnCounts = new Map<string, number>();
+  for (const s of stops) for (const a of s.addOns) addOnCounts.set(a, (addOnCounts.get(a) ?? 0) + 1);
+
+  const rows = stops
+    .map(
+      (s) => `<tr>
+      <td style="padding:10px 10px 10px 0;vertical-align:top;font-family:${HEAD};font-size:16px;font-weight:700;color:${C.navy};width:28px;">${s.stop}</td>
+      <td style="padding:10px 0;vertical-align:top;border-top:1px solid ${C.stoneLine};">
+        <div style="font-weight:600;">${esc(s.address)}</div>
+        <div style="font-size:14px;color:${C.muted};">${esc(s.name)} · <a href="tel:${esc(s.phone.replace(/\D/g, ""))}" style="color:${C.muted};">${esc(s.phone)}</a></div>
+        ${s.addOns.length ? `<div style="font-size:14px;color:${C.navy};">+ ${esc(s.addOns.join(", "))}</div>` : ""}
+        ${s.notes ? `<div style="font-size:14px;margin-top:2px;">Note: ${esc(s.notes)}</div>` : ""}
+      </td></tr>`,
+    )
+    .join("");
+
+  const html = layout({
+    preheader: `${homes} in ${d.communityName} on ${formatServiceDate(d.serviceDate)}.`,
+    body: [
+      h1(opts.updated ? `Updated route for ${formatServiceDate(d.serviceDate, "short")}` : `Your route for ${formatServiceDate(d.serviceDate, "short")}`),
+      p(
+        `${opts.contactName ? `Hi ${esc(opts.contactName.split(" ")[0])}, ` : ""}${
+          opts.updated ? `here's the latest list for ${esc(d.title)} in ${esc(d.communityName)}. It replaces the one we sent before.` : `signups for ${esc(d.title)} in ${esc(d.communityName)} are closed. Here's every home that booked.`
+        }`,
+      ),
+      details([
+        ["Date", when(d)],
+        ...(d.backupDate ? [["Rain date", formatServiceDate(d.backupDate)] as [string, string]] : []),
+        ["Homes", `<strong>${n}</strong>`],
+        ...[...addOnCounts].map(([name, count]) => [name, `${count}`] as [string, string]),
+      ]),
+      n ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:4px 0 16px;">${rows}</table>` : p(`No homes are booked.`),
+      callout(`<strong>You don't collect payment.</strong> Let us know as homes are finished and Pavilion charges each resident's saved card. Residents get a reminder the day before.`),
+      small(`The same list is attached as a spreadsheet, in driving order. Resident names and phone numbers are only for this job. Reply to this email if anything looks off.`),
+    ].join(""),
+  });
+  const text = toText([
+    subject,
+    "",
+    `Date: ${formatServiceDate(d.serviceDate)}${d.arrivalWindow ? `, ${d.arrivalWindow}` : ""}`,
+    d.backupDate ? `Rain date: ${formatServiceDate(d.backupDate)}` : null,
+    "",
+    ...stops.map((s) => `${s.stop}. ${s.address} | ${s.name} ${s.phone}${s.addOns.length ? ` | + ${s.addOns.join(", ")}` : ""}${s.notes ? ` | Note: ${s.notes}` : ""}`),
+    "",
+    "You don't collect payment. Let us know as homes are finished and Pavilion charges each resident's saved card.",
+  ]);
+  return { subject, html, text };
+}
