@@ -13,6 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   await requireAdmin();
   const payments = config.paymentsMode();
   const email = config.emailMode();
+  const sms = config.smsMode();
   return (
     <div className="min-h-dvh bg-sage-50">
       <header className="sticky top-0 z-20 border-b border-line bg-white/90 backdrop-blur">
@@ -27,6 +28,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Link href="/admin/outbox" className="hidden sm:inline-flex">
               <Badge tone={email === "resend" ? "blue" : "honey"} title="Email mode">
                 {email === "resend" ? "Resend" : "Emails → Outbox"}
+              </Badge>
+            </Link>
+            <Link href="/admin/outbox" className="hidden sm:inline-flex">
+              <Badge tone={sms === "twilio" ? "blue" : "honey"} title="Text mode">
+                {sms === "twilio" ? "Twilio" : "Texts → Outbox"}
               </Badge>
             </Link>
             <form action={logout}>
