@@ -19,10 +19,11 @@ npm run dev
 - Resident page: http://localhost:3000/d/gutter-day
 - Admin: http://localhost:3000/admin (password = `ADMIN_PASSWORD`)
 
-With no Stripe or Resend keys, the app runs in **mock mode**:
+With no Stripe, Resend or Twilio keys, the app runs in **mock mode**:
 
 - **Payments:** a "test wallet" button stands in for Apple Pay / Google Pay, and three test cards stand in for Stripe's card field: one that succeeds, one that gets declined later, and one that needs bank approval later.
 - **Email:** emails go to the admin **Outbox** (`/admin/outbox`), where you can read each one exactly as a resident would see it.
+- **Texts:** texts are saved to the same Outbox, marked "Text".
 
 The admin header always shows which mode you're in.
 
@@ -70,6 +71,29 @@ How payments work:
 
 Set `RESEND_API_KEY` and `EMAIL_FROM`. Until you verify a sending domain in Resend, you can only send to your own address from `onboarding@resend.dev`. Every email is still saved to the Outbox either way.
 
+## Texts (Twilio)
+
+Residents who tick "Text me about my service day" get:
+
+| Text | When |
+| --- | --- |
+| Booking confirmed | Right after they book. Includes "Reply STOP to opt out." |
+| Reminder | The day before, from the daily job. Only sent 8am to 9pm Mountain. |
+| Crew on the way | When staff press "Text: crew on the way" on a booking in the admin. |
+| Date moved | When staff move the service day (weather). |
+| Card didn't go through | With the secure payment link, when an off-session charge fails. |
+
+Residents can turn texts off on their booking page or by replying STOP.
+
+To send for real:
+
+1. Create a Twilio account, buy a local number, and create a **Messaging Service** with the number in it.
+2. Register for **A2P 10DLC** (brand + "Account notifications" campaign). US carriers block unregistered texts from local numbers. Approval usually takes a few days to a few weeks. Use the booking form's opt-in box and the terms page's "Text messages" section as the opt-in proof.
+3. Set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and `TWILIO_MESSAGING_SERVICE_SID` (or `TWILIO_FROM` with a plain number).
+4. In the Messaging Service, set the incoming message webhook to `APP_URL/api/twilio/inbound`. Keep Twilio's default opt-out handling on: it sends the STOP/HELP replies and blocks texts to numbers that opted out. The webhook keeps `Resident.smsOptIn` in sync.
+
+Each text costs about a cent (plus carrier fees), and most are one segment. They're written in plain ASCII so they don't switch to the pricier Unicode encoding.
+
 ## Deploy (Vercel)
 
 1. Create a Postgres database (Neon through the Vercel integration is easiest) and set `DATABASE_URL`.
@@ -106,6 +130,7 @@ src/lib/domain/             pure business rules + unit tests
 src/lib/services/           booking, charging, admin operations (DB + Stripe + email)
 src/lib/payments/           Stripe adapter and mock adapter
 src/lib/email/              Resend sender (logs to Outbox) and templates
+src/lib/sms/                Twilio sender (logs to Outbox), text templates, signature check
 src/app/d/[slug]            resident deal page, booking form (wallet, card, address suggestions), terms
 src/app/b/[token]           confirmation / manage / cancel / pay / calendar
 src/app/r/[token]           one-tap rating
@@ -117,6 +142,5 @@ e2e/                        Playwright test
 
 - **Stripe Connect payouts:** `stripeAccountId` on vendors, communities and management companies, plus payout status and reference fields on each ledger row.
 - **Vendor job page:** `Deal.vendorToken`, `Booking.routeOrder`, `Booking.photoUrls`.
-- **SMS:** `MessageLog.channel`, `Resident.smsOptIn`.
 - **Recurring services:** `Deal.seriesId`. Residents are already stored as households that can carry across deals.
 - **Multiple communities and deals:** already supported.

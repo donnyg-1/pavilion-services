@@ -19,7 +19,14 @@ export default async function MessagePage({ params }: { params: Promise<{ id: st
         <p><span className="text-muted">When:</span> {formatDateTime(msg.createdAt)} · <Badge tone={msg.status === "sent" ? "green" : msg.status === "failed" ? "red" : "honey"}>{msg.status}</Badge></p>
         {msg.error ? <p className="text-danger">{msg.error}</p> : null}
       </Card>
+      {msg.channel === "sms" ? (
+        <Card className="p-4">
+          <p className="mb-2 text-sm text-muted">Text message · {msg.text.length} characters</p>
+          <p className="max-w-sm rounded-2xl rounded-bl-sm bg-sage-100 px-4 py-3 text-[15px] whitespace-pre-line">{msg.text}</p>
+        </Card>
+      ) : (
       <iframe title="Email preview" srcDoc={msg.html.replace("<head>", '<head><base target="_blank">')} sandbox="allow-popups allow-popups-to-escape-sandbox" className="h-[760px] w-full rounded-2xl border border-line bg-white" />
+      )}
     </div>
   );
 }

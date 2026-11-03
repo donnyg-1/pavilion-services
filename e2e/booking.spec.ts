@@ -10,8 +10,11 @@ test.describe.configure({ mode: "serial" });
 test("wallet button books in one tap", async ({ page }) => {
   await page.goto("/d/gutter-day?src=board");
   test.skip(await page.getByText("Signups are closed").isVisible(), "Signups already closed. Run `npm run db:reset` for fresh seed data.");
+  // Texts are opt-in: unticking the box means no texts, and the booking page says so.
+  await page.getByRole("checkbox", { name: /Text me about my service day/ }).uncheck();
   await page.getByRole("button", { name: /Book with test wallet/ }).click();
   await expect(page.getByRole("heading", { name: /You're booked/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Text me reminders" })).toBeVisible();
 });
 
 let referrerToken = "";
@@ -64,6 +67,7 @@ test("resident books, admin charges, ledger records it", async ({ page, browser 
 
   await expect(page.getByRole("heading", { name: /You're booked/ })).toBeVisible();
   await expect(page.getByTestId("share-url")).toContainText("ref=");
+  await expect(page.getByText("On, to (801) 555-0111")).toBeVisible();
 
   const admin = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
   admin.on("dialog", (d) => d.accept());
@@ -80,11 +84,19 @@ test("resident books, admin charges, ledger records it", async ({ page, browser 
   }
   await admin.goto(`${dealUrl}?tab=bookings&status=booked`);
   const row = admin.locator("tr").filter({ hasText: email });
+  await row.getByRole("button", { name: "Text: crew on the way" }).click();
+  await expect(admin.getByText("Texted E2E Resident: crew on the way.")).toBeVisible();
   await row.getByRole("button", { name: "Complete & charge" }).click();
   await expect(admin.getByText(/Charged \$/)).toBeVisible();
 
   await admin.goto(`${dealUrl}?tab=ledger`);
   await expect(admin.locator("tr", { hasText: "E2E Resident" }).first()).toBeVisible();
+
+  // Both texts this resident got are in the Outbox.
+  await admin.goto("/admin/outbox");
+  const texts = admin.locator("tr", { hasText: "+18015550111" });
+  await expect(texts.filter({ hasText: "booking confirmed" })).toHaveCount(1);
+  await expect(texts.filter({ hasText: "on the way" })).toHaveCount(1);
 });
 
 test("the referrer is charged $3 less", async ({ browser }) => {

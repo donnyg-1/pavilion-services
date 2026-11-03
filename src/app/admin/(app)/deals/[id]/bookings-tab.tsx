@@ -9,7 +9,7 @@ import { routeSortKey } from "@/lib/domain/address";
 import { SOURCE_LABELS } from "@/lib/services/admin";
 import { bookingAddress, bookingInclude, REFERRAL_STATUSES } from "@/lib/services/deals";
 import { referralCreditCents } from "@/lib/domain/pricing";
-import { adminCancel, chargeBooking, chargeSelected, refund, retryBookingCharge } from "../../../actions";
+import { adminCancel, chargeBooking, chargeSelected, refund, retryBookingCharge, textOnTheWay } from "../../../actions";
 import { bookingBadge } from "../../badges";
 
 const FILTERS = ["all", "booked", "charged", "failed", "refunded", "cancelled", "pending_setup", "expired"] as const;
@@ -120,6 +120,7 @@ export async function BookingsTab({ dealId, status }: { dealId: string; status?:
                   <td className="px-3 py-3">
                     <p>{b.resident.email}</p>
                     <p className="text-muted">{b.resident.phone}</p>
+                    <p className={cx("text-xs", b.resident.smsOptIn ? "text-pine-700" : "text-muted")}>{b.resident.smsOptIn ? "Texts on" : "No texts"}</p>
                   </td>
                   <td className="px-3 py-3">
                     <p>{SOURCE_LABELS[b.source]}</p>
@@ -139,7 +140,7 @@ export async function BookingsTab({ dealId, status }: { dealId: string; status?:
                     {charge?.refundedCents ? <p className="text-xs text-muted">−{formatCents(charge.refundedCents, { showZeroCents: true })} refunded</p> : null}
                   </td>
                   <td className="px-3 py-3">
-                    <RowActions booking={b} dealId={dealId} canCharge={canCharge} remaining={charge ? charge.amountCents - charge.refundedCents : 0} payUrl={url(`/b/${b.publicToken}/pay`)} />
+                    <RowActions booking={b} texts={b.resident.smsOptIn} dealId={dealId} canCharge={canCharge} remaining={charge ? charge.amountCents - charge.refundedCents : 0} payUrl={url(`/b/${b.publicToken}/pay`)} />
                   </td>
                 </tr>
               );
@@ -151,13 +152,21 @@ export async function BookingsTab({ dealId, status }: { dealId: string; status?:
   );
 }
 
-function RowActions({ booking, dealId, canCharge, remaining, payUrl }: { booking: { id: string; status: string; publicToken: string }; dealId: string; canCharge: boolean; remaining: number; payUrl: string }) {
+function RowActions({ booking, texts, dealId, canCharge, remaining, payUrl }: { booking: { id: string; status: string; publicToken: string; onTheWayAt: Date | null }; texts: boolean; dealId: string; canCharge: boolean; remaining: number; payUrl: string }) {
   const s = booking.status;
   return (
     <div className="flex min-w-48 flex-col items-start gap-2">
       {s === "booked" && canCharge ? (
         <ActionForm action={chargeBooking.bind(null, booking.id, dealId)} silent confirm="Mark complete and charge this card now?" inline>
           <SubmitButton pendingText="Charging…">Complete &amp; charge</SubmitButton>
+        </ActionForm>
+      ) : null}
+      {s === "booked" && texts ? (
+        <ActionForm action={textOnTheWay.bind(null, booking.id, dealId)} silent inline>
+          <SubmitButton variant="secondary" pendingText="Texting…">
+            {booking.onTheWayAt ? "Text again: on the way" : "Text: crew on the way"}
+          </SubmitButton>
+          {booking.onTheWayAt ? <p className="mt-1 text-xs text-muted">Sent {formatDateTime(booking.onTheWayAt)}</p> : null}
         </ActionForm>
       ) : null}
       {s === "failed" ? (

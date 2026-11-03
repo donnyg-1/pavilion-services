@@ -5,7 +5,7 @@ import { config } from "@/lib/config";
 import { finalizeBooking, joinWaitlist, prepareBooking, requestAddressReview, type BookingResult } from "@/lib/services/booking";
 
 export type Contact = { name: string; email: string; phone: string; street: string; unit: string };
-export type BookingInput = Contact & { notes: string; addOnIds: string[] };
+export type BookingInput = Contact & { notes: string; addOnIds: string[]; smsOptIn: boolean };
 
 export async function prepare(slug: string, input: BookingInput, attribution: { src: string | null; ref: string | null }): Promise<BookingResult> {
   return prepareBooking(slug, input, attribution);

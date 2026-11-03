@@ -15,6 +15,7 @@ import { bookingAddress, bookingInclude, countBookings, dealInclude, fillCopy, l
 import { CancelBooking } from "./cancel";
 import { ShareBox } from "./share";
 import { NotesEditor } from "./notes";
+import { TextsToggle } from "./texts";
 
 export const metadata: Metadata = { title: "Your booking", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -130,6 +131,14 @@ export default async function BookingPage({ params, searchParams }: Props) {
                 <>
                   <dt className="text-muted">Crew notes</dt>
                   <dd className="whitespace-pre-line">{booking.notes}</dd>
+                </>
+              ) : null}
+              {booking.status === "booked" ? (
+                <>
+                  <dt className="text-muted">Texts</dt>
+                  <dd>
+                    <TextsToggle token={token} initial={booking.resident.smsOptIn} phone={booking.resident.phone} />
+                  </dd>
                 </>
               ) : null}
               {booking.cardLast4 ? (

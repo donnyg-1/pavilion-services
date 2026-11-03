@@ -253,6 +253,14 @@ export async function adminCancel(bookingId: string, dealId: string): Promise<Ac
   return result;
 }
 
+export async function textOnTheWay(bookingId: string, dealId: string): Promise<ActionResult> {
+  await requireAdmin();
+  const result = await A.sendOnTheWay(bookingId);
+  await setFlash(result);
+  revalidatePath(`/admin/deals/${dealId}`);
+  return result;
+}
+
 export async function emailWaitlist(dealId: string): Promise<ActionResult> {
   await requireAdmin();
   const deal = await db.deal.findUniqueOrThrow({ where: { id: dealId }, include: dealInclude });

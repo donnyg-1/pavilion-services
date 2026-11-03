@@ -5,6 +5,8 @@ import { bookingTotalCents, referralCreditCents } from "@/lib/domain/pricing";
 import { formatCents } from "@/lib/domain/money";
 import { sendEmail } from "@/lib/email/send";
 import * as T from "@/lib/email/templates";
+import { textResident } from "@/lib/sms/send";
+import * as S from "@/lib/sms/templates";
 import { payments } from "@/lib/payments";
 import { bookingContext, bookingInclude, dealContext, dealInclude, lockDealIfDue, referralStatus } from "./deals";
 
@@ -88,6 +90,7 @@ async function attemptCharge(chargeId: string): Promise<Result> {
     bookingId: booking.id,
     ...T.paymentFailed(dealContext(deal), bookingContext(deal, booking), charge.amountCents, payUrl, res.code === "authentication_required" || res.code === "requires_action"),
   });
+  await textResident({ resident: booking.resident, template: "payment_failed", dealId: deal.id, bookingId: booking.id, dedupeKey: `payment_failed:${charge.id}`, body: S.paymentFailed(dealContext(deal), charge.amountCents, payUrl) });
   return { ok: false, message: `Charge failed (${res.code}). We emailed the resident a payment link.` };
 }
 

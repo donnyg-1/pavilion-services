@@ -30,6 +30,7 @@ export function BookingForm(props: Props) {
   const router = useRouter();
   const [contact, setContact] = useState<Contact>(empty);
   const [notes, setNotes] = useState("");
+  const [texts, setTexts] = useState(true);
   const [showNotes, setShowNotes] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [mode, setMode] = useState<"book" | "waitlist">(props.full ? "waitlist" : "book");
@@ -60,7 +61,7 @@ export function BookingForm(props: Props) {
    * save the card with Stripe, then confirm. Returns false if anything stopped it.
    */
   async function book(who: Contact, saveCard: SaveCard): Promise<boolean> {
-    const r = await prepare(slug, { ...who, notes, addOnIds: selected }, attribution());
+    const r = await prepare(slug, { ...who, notes, addOnIds: selected, smsOptIn: texts }, attribution());
     if (r.kind !== "ready") {
       showProblem(r, null);
       return false;
@@ -220,6 +221,8 @@ export function BookingForm(props: Props) {
         </fieldset>
       ) : null}
 
+      <TextOptIn checked={texts} onChange={setTexts} />
+
       {/* Fastest path: the phone's wallet supplies name, email, phone, address and card. */}
       <div className={cx(busy === "card" && "pointer-events-none opacity-50")}>
         {payments.mode === "stripe" ? (
@@ -294,5 +297,18 @@ export function BookingForm(props: Props) {
         </p>
       </div>
     </form>
+  );
+}
+
+/** Consent for service-day texts. Sits above the wallet button so it covers both ways of booking. */
+function TextOptIn({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-white px-3.5 py-3">
+      <input type="checkbox" name="smsOptIn" checked={checked} onChange={(e) => onChange(e.target.checked)} className="mt-0.5 size-5 shrink-0 accent-pine-700" />
+      <span className="text-sm">
+        <span className="block font-semibold">Text me about my service day</span>
+        <span className="block text-muted">A reminder the day before, a heads-up when the crew is on the way, and any weather changes. Up to about 5 texts per service. Msg &amp; data rates may apply. Reply STOP to opt out.</span>
+      </span>
+    </label>
   );
 }

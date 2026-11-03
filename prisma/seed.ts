@@ -86,7 +86,7 @@ async function main() {
     let first: string | null = null;
     for (const s of samples) {
       const addr = await db.communityAddress.findFirstOrThrow({ where: { communityId: community.id, normalized: normalizeAddress(s.address)!.key } });
-      const resident = await db.resident.create({ data: { name: s.name, email: s.email, phone: "(801) 555-0100", communityAddressId: addr.id, stripeCustomerId: `cus_mock_${s.email}` } });
+      const resident = await db.resident.create({ data: { name: s.name, email: s.email, phone: "(801) 555-0100", communityAddressId: addr.id, stripeCustomerId: `cus_mock_${s.email}`, smsOptIn: true, smsConsentAt: new Date() } });
       const b: { id: string } = await db.booking.create({
         data: {
           dealId: deal.id,

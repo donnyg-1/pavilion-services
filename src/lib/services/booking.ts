@@ -7,6 +7,8 @@ import { normalizeAddress } from "@/lib/domain/address";
 import { currentPriceCents, tierUnlockedBetween } from "@/lib/domain/pricing";
 import { sendEmail } from "@/lib/email/send";
 import * as T from "@/lib/email/templates";
+import { textResident } from "@/lib/sms/send";
+import * as S from "@/lib/sms/templates";
 import { payments, type SavedCard } from "@/lib/payments";
 import { MOCK_CARDS } from "@/lib/payments/mock";
 import { publicToken, referralCode } from "@/lib/tokens";
@@ -36,6 +38,7 @@ export const bookingSchema = z.object({
   unit: z.string().trim().max(20).optional().default(""),
   notes: z.string().trim().max(500).optional().default(""),
   addOnIds: z.array(z.string()).default([]),
+  smsOptIn: z.boolean().default(false),
 });
 
 export const contactSchema = bookingSchema.pick({ name: true, email: true, phone: true, street: true, unit: true });
@@ -51,6 +54,11 @@ export type BookingResult =
 
 export function authorizationText(deal: { vendor: { name: string } }) {
   return `By booking, you agree to the booking terms and authorize Pavilion to charge your card the final group price (plus any add-ons) after ${deal.vendor.name} completes the job. You won't be charged today.`;
+}
+
+/** What the "text me" box on the booking form does to the resident's record. */
+function smsConsent(optIn: boolean) {
+  return optIn ? { smsOptIn: true, smsConsentAt: new Date(), smsOptedOutAt: null } : { smsOptIn: false };
 }
 
 /** Finds the community address for typed input. Falls back to the street without a unit for single-family lists. */
@@ -118,8 +126,8 @@ export async function prepareBooking(slug: string, raw: unknown, attribution: { 
 
     const resident = await tx.resident.upsert({
       where: { email: input.email },
-      create: { email: input.email, name: input.name, phone: input.phone, communityAddressId: address!.id },
-      update: { name: input.name, phone: input.phone, communityAddressId: address!.id },
+      create: { email: input.email, name: input.name, phone: input.phone, communityAddressId: address!.id, ...smsConsent(input.smsOptIn) },
+      update: { name: input.name, phone: input.phone, communityAddressId: address!.id, ...smsConsent(input.smsOptIn) },
     });
 
     const addOns = deal.addOns.filter((a) => input.addOnIds.includes(a.id));
@@ -253,6 +261,7 @@ export async function confirmBooking(bookingId: string, card: SavedCard): Promis
     dedupeKey: `confirmed:${bookingId}`,
     ...T.bookingConfirmed(ctx, bookingContext(deal, booking), v.priceCents, v.next),
   });
+  await textResident({ resident: booking.resident, template: "booking_confirmed", dealId: deal.id, bookingId, dedupeKey: `confirmed:${bookingId}`, body: S.bookingConfirmed(ctx, bookingContext(deal, booking)) });
 
   await notifyReferrer(deal, booking);
 

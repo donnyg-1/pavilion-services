@@ -70,7 +70,14 @@ export default async function TermsPage({ params }: { params: Promise<{ slug: st
         `You can cancel online from your confirmation email until signups close. If weather prevents the work, the service day moves to the backup date and we email everyone. If you can't make the new date, contact us.`,
       ],
     ],
-    ["Your information", [`We use your name, email, phone and address only to book and complete this service, send updates about it, and take payment. We share your address and notes with the service company so they can do the job. We never show your name or address to other residents.`]],
+    [
+      "Text messages",
+      [
+        `If you tick "Text me about my service day," Pavilion will text the mobile number you gave about this booking: a confirmation, a reminder the day before, a heads-up when the crew is on the way, weather changes and payment problems. That's usually 2 to 5 texts per service. We don't send marketing texts.`,
+        `Message and data rates may apply. Reply STOP to any text to opt out, or turn texts off on your booking page. Reply HELP for help. Ticking the box isn't required to book. Carriers aren't liable for delayed or undelivered messages.`,
+      ],
+    ],
+    ["Your information", [`We use your name, email, phone and address only to book and complete this service, send updates about it, and take payment. We share your address and notes with the service company so they can do the job. We never show your name or address to other residents. We never sell or share your phone number or text consent with anyone for their marketing.`]],
   ];
 
   return (

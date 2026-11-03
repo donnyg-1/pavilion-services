@@ -173,7 +173,9 @@ model Resident {
   communityAddressId String?
   communityAddress   CommunityAddress? @relation(fields: [communityAddressId], references: [id])
   stripeCustomerId   String?
-  smsOptIn           Boolean           @default(false) // (M2) Twilio
+  smsOptIn           Boolean           @default(false) // service-day texts; replying STOP turns it off
+  smsConsentAt       DateTime? // when they ticked the box (or texted START), kept as proof of consent
+  smsOptedOutAt      DateTime?
   bookings           Booking[]
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
@@ -233,6 +235,7 @@ model Booking {
   routeOrder            Int? // (M2) vendor job page
   photoUrls             String[] // (M2) photo proof
   bookedAt              DateTime?
+  onTheWayAt            DateTime? // last "crew is on the way" text
   cancelledAt           DateTime?
   completedAt           DateTime?
   createdAt             DateTime         @default(now())
@@ -390,7 +393,7 @@ model DealVisit {
 
 enum MessageChannel {
   email
-  sms // (M2) Twilio
+  sms
 }
 
 enum MessageStatus {

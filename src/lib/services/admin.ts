@@ -5,6 +5,9 @@ import { sumLedger, type LedgerAmounts } from "@/lib/domain/ledger";
 import { addDays, isoDate, mountainToday } from "@/lib/dates";
 import { sendEmail } from "@/lib/email/send";
 import * as T from "@/lib/email/templates";
+import { isTextingHours } from "@/lib/domain/sms";
+import { textResident } from "@/lib/sms/send";
+import * as S from "@/lib/sms/templates";
 import { bookingContext, bookingInclude, countBookings, dealContext, dealInclude, expireStaleHolds, lockDealIfDue, viewDeal } from "./deals";
 
 // ─── Address list import ────────────────────────────────────────────────────
@@ -93,6 +96,7 @@ export async function rescheduleDeal(dealId: string, newDate: Date, note: string
   const ctx = dealContext(updated);
   for (const b of bookings) {
     await sendEmail({ to: b.resident.email, template: "rescheduled", dealId, bookingId: b.id, ...T.rescheduled(ctx, bookingContext(updated, b), previous, note) });
+    await textResident({ resident: b.resident, template: "rescheduled", dealId, bookingId: b.id, body: S.rescheduled(ctx, bookingContext(updated, b), note) });
   }
   return { ok: true as const, message: `Moved to the new date and emailed ${bookings.length} ${bookings.length === 1 ? "home" : "homes"}.` };
 }
@@ -129,10 +133,26 @@ export async function runDailyJobs(now = new Date()) {
         dedupeKey: `reminder:${b.id}:${tomorrow}`,
         ...T.reminder(ctx, bookingContext(deal, b), b.notes),
       });
+      // Texts only go out in the daytime. The cron runs mid-morning; a late-night manual run sends just the email.
+      if (isTextingHours(now)) {
+        await textResident({ resident: b.resident, template: "reminder", dealId: deal.id, bookingId: b.id, dedupeKey: `reminder:${b.id}:${tomorrow}`, body: S.reminder(ctx, bookingContext(deal, b)) });
+      }
       reminders++;
     }
   }
   return { locked: due.length, reminders };
+}
+
+// ─── Day of service ────────────────────────────────────────────────────────
+
+/** Texts a booked home that the crew is heading over. Can be sent again (e.g. the crew got delayed). */
+export async function sendOnTheWay(bookingId: string) {
+  const b = await db.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { ...bookingInclude, deal: { include: dealInclude } } });
+  if (b.status !== "booked") return { ok: false as const, message: "Only booked homes can get this text." };
+  if (!b.resident.smsOptIn) return { ok: false as const, message: `${b.resident.name} didn't opt in to texts.` };
+  await textResident({ resident: b.resident, template: "on_the_way", dealId: b.dealId, bookingId, body: S.onTheWay(dealContext(b.deal), bookingContext(b.deal, b)) });
+  await db.booking.update({ where: { id: bookingId }, data: { onTheWayAt: new Date() } });
+  return { ok: true as const, message: `Texted ${b.resident.name}: crew on the way.` };
 }
 
 // ─── Dashboard ──────────────────────────────────────────────────────────────
