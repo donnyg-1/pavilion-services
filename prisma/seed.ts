@@ -7,7 +7,7 @@ import { normalizeAddress } from "../src/lib/domain/address";
 import { publicToken, referralCode } from "../src/lib/tokens";
 import { addDays, mountainLocalToUtc, mountainToday } from "../src/lib/dates";
 
-const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
+const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL }) });
 
 // A fictional Utah County grid neighborhood plus a couple of named streets.
 function placeholderAddresses(): string[] {

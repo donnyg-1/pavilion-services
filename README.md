@@ -107,11 +107,11 @@ Each text costs about a cent (plus carrier fees), and most are one segment. They
 
 ## Deploy (Vercel)
 
-1. Create a Postgres database (Neon through the Vercel integration is easiest) and set `DATABASE_URL`.
-2. Set every variable from `.env.example` in Vercel. Set `APP_URL` to the deployed URL.
-3. Run `npx prisma migrate deploy` against the production database, then seed or create real data in the admin.
+1. Import the GitHub repo in Vercel. Set `ADMIN_PASSWORD`, `SESSION_SECRET` (32+ characters) and `CRON_SECRET`.
+2. Under the project's **Storage** tab, create a Neon Postgres database and connect it. That sets `DATABASE_URL` and `DATABASE_URL_UNPOOLED`. Redeploy.
+3. Each deploy runs `npm run vercel-build`, which applies migrations, seeds the sample "Gutter Day" deal if it isn't there yet, and builds. `APP_URL` defaults to the project's production address. Set it only for a custom domain.
 4. `vercel.json` schedules `/api/cron/daily` once a day (16:00 UTC, which is 9–10am Mountain). It sends the day-before reminders and locks any deal whose deadline passed. Deadlines also lock on the next page view, so nothing depends on cron timing. Vercel sends `CRON_SECRET` automatically.
-5. Add a Stripe webhook endpoint at `https://<your-app>/api/stripe/webhook` for `setup_intent.succeeded` and `checkout.session.completed`, and register the domain for Apple Pay.
+5. For real Stripe test payments, see "Real Stripe" above: add the keys, a webhook at `https://<your-app>/api/stripe/webhook` for `setup_intent.succeeded` and `checkout.session.completed`, and register the domain under Settings → Payment method domains for Apple Pay.
 
 ## How the rules are implemented
 

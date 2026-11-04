@@ -4,7 +4,8 @@ import { PrismaPg } from "@prisma/adapter-pg";
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 function createClient() {
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
+  // DATABASE_URL locally; Vercel's Postgres integrations may only set POSTGRES_URL.
+  return new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL }) });
 }
 
 export const db = globalForPrisma.prisma ?? createClient();

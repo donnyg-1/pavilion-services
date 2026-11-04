@@ -1,5 +1,7 @@
 export const config = {
-  appUrl: () => (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, ""),
+  /** APP_URL wins; on Vercel it falls back to the project's production address. */
+  appUrl: () =>
+    (process.env.APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000")).replace(/\/$/, ""),
   paymentsMode: (): "stripe" | "mock" => (process.env.STRIPE_SECRET_KEY ? "stripe" : "mock"),
   /** Safe to send to the browser. Read at request time so it isn't baked into the build. */
   stripePublishableKey: () => process.env.STRIPE_PUBLISHABLE_KEY || "",
