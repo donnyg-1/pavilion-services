@@ -7,7 +7,7 @@ import { Button, Field, Icon, Input, Notice, Textarea, cx } from "@/components/u
 import { formatCents } from "@/lib/domain/money";
 import type { BookingResult } from "@/lib/services/booking";
 import { readAttribution } from "./attribution";
-import { AddressInput } from "./address-input";
+import { AddressInput, type AddressStatus } from "./address-input";
 import { finalize, mockWalletIdentity, prepare, submitReview, submitWaitlist, type Contact } from "./actions";
 import { MockCard, MockWallet, StripeCard, StripeWallet, type CardDriver, type SaveCard } from "./payment-fields";
 
@@ -30,8 +30,9 @@ export function BookingForm(props: Props) {
   const router = useRouter();
   const [contact, setContact] = useState<Contact>(empty);
   const [notes, setNotes] = useState("");
-  const [texts, setTexts] = useState(false); // unticked: carriers want opt-in to be an active choice
+  const [addressStatus, setAddressStatus] = useState<AddressStatus>("idle");
   const [showNotes, setShowNotes] = useState(false);
+  const [showUnit, setShowUnit] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [mode, setMode] = useState<"book" | "waitlist">(props.full ? "waitlist" : "book");
   const [result, setResult] = useState<BookingResult | null>(null);
@@ -61,7 +62,7 @@ export function BookingForm(props: Props) {
    * save the card with Stripe, then confirm. Returns false if anything stopped it.
    */
   async function book(who: Contact, saveCard: SaveCard): Promise<boolean> {
-    const r = await prepare(slug, { ...who, notes, addOnIds: selected, smsOptIn: texts }, attribution());
+    const r = await prepare(slug, { ...who, notes, addOnIds: selected }, attribution());
     if (r.kind !== "ready") {
       showProblem(r, null);
       return false;
@@ -162,21 +163,42 @@ export function BookingForm(props: Props) {
     </>
   );
   const address = (
-    <div className="grid grid-cols-[1fr_6.5rem] gap-3">
+    <div className="space-y-2">
       <Field label="Street address" htmlFor="street" error={fieldErrors.street}>
         <AddressInput
           slug={slug}
           value={contact.street}
-          invalid={!!fieldErrors.street || result?.kind === "not_on_list"}
+          invalid={!!fieldErrors.street || result?.kind === "not_on_list" || addressStatus === "not_on_list"}
+          onStatus={setAddressStatus}
           onChange={(street) => {
             setContact((c) => ({ ...c, street }));
             if (result?.kind === "not_on_list") setResult(null);
           }}
         />
       </Field>
-      <Field label="Unit" htmlFor="unit">
-        <Input id="unit" name="unit" autoComplete="address-line2" placeholder="Optional" value={contact.unit} onChange={set("unit")} />
-      </Field>
+      {addressStatus === "on_list" && !fieldErrors.street ? (
+        <p className="flex items-center gap-1.5 text-sm font-medium text-leaf-600" data-testid="address-ok">
+          <Icon name="check" className="size-4" /> On {communityName}&apos;s list
+        </p>
+      ) : null}
+      {addressStatus === "not_on_list" && result?.kind !== "not_on_list" && mode === "book" ? (
+        <Notice tone="warn" title={`We can't find this address on ${communityName}'s list`} className="animate-rise">
+          <p>Check the house number, or pick your address from the suggestions as you type. Still not there? We&apos;ll check it for you.</p>
+          <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={requestReview} disabled={sidePending}>
+            {sidePending ? "Sending…" : "Not on the list? Request review"}
+          </Button>
+          {side && !side.ok ? <p className="mt-2 text-sm text-danger">{side.message}</p> : null}
+        </Notice>
+      ) : null}
+      {showUnit || contact.unit ? (
+        <Field label={<>Unit <span className="font-normal text-muted">(optional)</span></>} htmlFor="unit">
+          <Input id="unit" name="unit" autoComplete="address-line2" value={contact.unit} onChange={set("unit")} autoFocus={showUnit && !contact.unit} />
+        </Field>
+      ) : (
+        <button type="button" onClick={() => setShowUnit(true)} className="text-sm font-semibold text-navy-700">
+          + Add a unit or apartment number
+        </button>
+      )}
     </div>
   );
 
@@ -220,8 +242,6 @@ export function BookingForm(props: Props) {
           </div>
         </fieldset>
       ) : null}
-
-      <TextOptIn checked={texts} onChange={setTexts} />
 
       {/* Fastest path: the phone's wallet supplies name, email, phone, address and card. */}
       <div className={cx(busy === "card" && "pointer-events-none opacity-50")}>
@@ -279,17 +299,17 @@ export function BookingForm(props: Props) {
             + Add a note for the crew
           </button>
         )}
-        <Field label="Card" htmlFor="card">
+        <Field label="Card" htmlFor="card" hint="Saved securely with Stripe. Not charged until the job is done.">
           {payments.mode === "stripe" ? <StripeCard publishableKey={payments.publishableKey} register={registerCard} /> : <MockCard register={registerCard} />}
         </Field>
       </div>
 
       <div className="space-y-3">
         <Button type="submit" size="lg" className="w-full" disabled={busy !== null}>
-          {busy === "card" ? "Booking…" : busy === "wallet" ? "Finishing with your wallet…" : `Book for ${formatCents(total)}`}
+          {busy === "card" ? "Booking…" : busy === "wallet" ? "Finishing with your wallet…" : "Book now, pay after the job"}
         </Button>
         <p className="text-center text-xs leading-relaxed text-muted">
-          You won&apos;t be charged today. By booking, you agree to the{" "}
+          Nothing is charged today. Your price is {formatCents(total)} right now{addOnTotal ? " with add-ons" : ""} and can only go down as neighbors join. By booking, you agree to the{" "}
           <Link href={`/d/${slug}/terms`} target="_blank" className="font-semibold text-navy-700 underline underline-offset-2">
             booking terms
           </Link>{" "}
@@ -297,18 +317,5 @@ export function BookingForm(props: Props) {
         </p>
       </div>
     </form>
-  );
-}
-
-/** Consent for service-day texts. Sits above the wallet button so it covers both ways of booking. */
-function TextOptIn({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-white px-3.5 py-3">
-      <input type="checkbox" name="smsOptIn" checked={checked} onChange={(e) => onChange(e.target.checked)} className="mt-0.5 size-5 shrink-0 accent-navy-700" />
-      <span className="text-sm">
-        <span className="block font-semibold">Text me when the crew is on the way</span>
-        <span className="block text-muted">Plus your confirmation, a reminder the day before, and any date or payment updates. No marketing texts. Usually 2–5 texts per service. Msg &amp; data rates may apply. Reply STOP to opt out.</span>
-      </span>
-    </label>
   );
 }

@@ -15,7 +15,7 @@ import { bookingAddress, bookingInclude, countBookings, dealInclude, fillCopy, l
 import { CancelBooking } from "./cancel";
 import { ShareBox } from "./share";
 import { NotesEditor } from "./notes";
-import { TextsToggle } from "./texts";
+import { TextsPrompt, TextsToggle } from "./texts";
 
 export const metadata: Metadata = { title: "Your booking", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -96,6 +96,10 @@ export default async function BookingPage({ params, searchParams }: Props) {
           </div>
         ) : null}
 
+        {booking.status === "booked" && !booking.resident.smsOptedOutAt && (!booking.resident.smsOptIn || sp.new) ? (
+          <TextsPrompt token={token} initial={booking.resident.smsOptIn} phone={booking.resident.phone} />
+        ) : null}
+
         {booking.status === "booked" ? <ShareBox url={shareUrl} title={deal.title} communityName={deal.community.name} priceCents={v.priceCents} next={v.next} referral={referral} /> : null}
 
         <Card className="divide-y divide-line">
@@ -137,7 +141,7 @@ export default async function BookingPage({ params, searchParams }: Props) {
                 <>
                   <dt className="text-muted">Texts</dt>
                   <dd>
-                    <TextsToggle token={token} initial={booking.resident.smsOptIn} phone={booking.resident.phone} />
+                    <TextsToggle key={String(booking.resident.smsOptIn)} token={token} initial={booking.resident.smsOptIn} phone={booking.resident.phone} />
                   </dd>
                 </>
               ) : null}

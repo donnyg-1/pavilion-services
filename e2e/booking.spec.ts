@@ -10,10 +10,12 @@ test.describe.configure({ mode: "serial" });
 test("wallet button books in one tap", async ({ page }) => {
   await page.goto("/d/gutter-day?src=board");
   test.skip(await page.getByText("Signups are closed").isVisible(), "Signups already closed. Run `npm run db:reset` for fresh seed data.");
-  // Texts are opt-in: the box starts unticked, so no texts unless the resident asks.
-  await expect(page.getByRole("checkbox", { name: /Text me when the crew is on the way/ })).not.toBeChecked();
+  // The form doesn't ask about texts; the booking page does, right after booking.
+  await expect(page.getByText(/Text me/)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Book now, pay after the job" })).toBeVisible();
   await page.getByRole("button", { name: /Book with test wallet/ }).click();
   await expect(page.getByRole("heading", { name: /You're booked/ })).toBeVisible();
+  await expect(page.getByText("Want a text when the crew's on the way?")).toBeVisible();
   await expect(page.getByRole("button", { name: "Text me reminders" })).toBeVisible();
 });
 
@@ -50,16 +52,18 @@ test("resident books, admin charges, ledger records it", async ({ page, browser 
   await page.fill("#name", "E2E Resident");
   await page.fill("#email", email);
   await page.fill("#phone", "801-555-0111");
-  await page.getByRole("checkbox", { name: /Text me when the crew is on the way/ }).check();
+  // An address that isn't on the community list is flagged as soon as they leave the field.
   await page.fill("#street", "1 Not A Real Rd");
-  await page.getByRole("button", { name: /^Book for/ }).click();
+  await page.locator("#street").blur();
+  await expect(page.getByText(/We can't find this address/)).toBeVisible();
   await expect(page.getByText("Not on the list? Request review")).toBeVisible();
 
   // Typing a messy version of the address offers the real one from the community list.
   await page.fill("#street", "");
   await page.locator("#street").pressSequentially(street.split(" ").slice(0, 2).join(" "), { delay: 30 });
   await page.getByRole("option").first().click();
-  await page.getByRole("button", { name: /^Book for/ }).click();
+  await expect(page.getByTestId("address-ok")).toContainText("On ");
+  await page.getByRole("button", { name: "Book now, pay after the job" }).click();
   const outcome = await Promise.race([
     page.waitForURL(/\/b\//).then(() => "booked"),
     page.getByText("already booked").waitFor().then(() => "taken"),
@@ -68,6 +72,9 @@ test("resident books, admin charges, ledger records it", async ({ page, browser 
 
   await expect(page.getByRole("heading", { name: /You're booked/ })).toBeVisible();
   await expect(page.getByTestId("share-url")).toContainText("ref=");
+  // One tap turns on texts and sends the confirmation text.
+  await page.getByRole("button", { name: "Yes, text me" }).click();
+  await expect(page.getByText("Texts are on. We'll text (801) 555-0111")).toBeVisible();
   await expect(page.getByText("On, to (801) 555-0111")).toBeVisible();
 
   const admin = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();

@@ -56,13 +56,13 @@ export function authorizationText(deal: { vendor: { name: string } }) {
   return `By booking, you agree to the booking terms and authorize Pavilion to charge your card the final group price (plus any add-ons) after ${deal.vendor.name} completes the job. You won't be charged today.`;
 }
 
-/** What the "text me" box on the booking form does to the resident's record. */
+/** Consent fields for service-day texts. Residents are asked on their booking page, right after booking. */
 function smsConsent(optIn: boolean) {
   return optIn ? { smsOptIn: true, smsConsentAt: new Date(), smsOptedOutAt: null } : { smsOptIn: false };
 }
 
 /** Finds the community address for typed input. Falls back to the street without a unit for single-family lists. */
-async function findAddress(communityId: string, street: string, unit: string) {
+export async function findAddress(communityId: string, street: string, unit: string) {
   const n = normalizeAddress(street, unit);
   if (!n) return { normalized: null, address: null };
   let address = await db.communityAddress.findFirst({ where: { communityId, normalized: n.key, active: true } });
@@ -70,6 +70,24 @@ async function findAddress(communityId: string, street: string, unit: string) {
     address = await db.communityAddress.findFirst({ where: { communityId, normalized: n.street, active: true } });
   }
   return { normalized: n, address };
+}
+
+/**
+ * Turns service-day texts on or off from the booking page (where residents are asked
+ * after booking). Turning them on sends the confirmation text, which says how to opt out.
+ */
+export async function setBookingTexts(token: string, on: boolean): Promise<{ ok: boolean; message: string }> {
+  const booking = await db.booking.findUnique({ where: { publicToken: token }, include: bookingInclude });
+  if (!booking) return { ok: false, message: "Booking not found." };
+  const resident = await db.resident.update({
+    where: { id: booking.residentId },
+    data: on ? smsConsent(true) : { smsOptIn: false, smsOptedOutAt: new Date() },
+  });
+  if (on && booking.status === "booked") {
+    const deal = (await db.deal.findUnique({ where: { id: booking.dealId }, include: dealInclude }))!;
+    await textResident({ resident, template: "booking_confirmed", dealId: deal.id, bookingId: booking.id, dedupeKey: `confirmed:${booking.id}`, body: S.bookingConfirmed(dealContext(deal), bookingContext(deal, booking)) });
+  }
+  return { ok: true, message: on ? "Texts are on." : "Texts are off. We'll still email you." };
 }
 
 /**
@@ -127,7 +145,8 @@ export async function prepareBooking(slug: string, raw: unknown, attribution: { 
     const resident = await tx.resident.upsert({
       where: { email: input.email },
       create: { email: input.email, name: input.name, phone: input.phone, communityAddressId: address!.id, ...smsConsent(input.smsOptIn) },
-      update: { name: input.name, phone: input.phone, communityAddressId: address!.id, ...smsConsent(input.smsOptIn) },
+      // A returning resident keeps the text setting they chose last time.
+      update: { name: input.name, phone: input.phone, communityAddressId: address!.id, ...(input.smsOptIn ? smsConsent(true) : {}) },
     });
 
     const addOns = deal.addOns.filter((a) => input.addOnIds.includes(a.id));

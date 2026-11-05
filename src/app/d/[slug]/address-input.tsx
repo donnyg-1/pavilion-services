@@ -3,12 +3,19 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Icon, Input, cx } from "@/components/ui";
 
-/** Street address field that suggests matches from the community's address list as you type. */
-export function AddressInput({ slug, value, onChange, invalid }: { slug: string; value: string; onChange: (v: string) => void; invalid: boolean }) {
+export type AddressStatus = "idle" | "on_list" | "not_on_list";
+
+/**
+ * Street address field that suggests matches from the community's address list as you
+ * type, and says whether the address is on the list as soon as it's picked or the
+ * resident moves on, instead of after they press Book.
+ */
+export function AddressInput({ slug, value, onChange, invalid, onStatus }: { slug: string; value: string; onChange: (v: string) => void; invalid: boolean; onStatus?: (s: AddressStatus) => void }) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const picked = useRef<string | null>(null);
+  const checking = useRef("");
   const listId = useId();
 
   useEffect(() => {
@@ -38,8 +45,21 @@ export function AddressInput({ slug, value, onChange, invalid }: { slug: string;
   function pick(s: string) {
     picked.current = s;
     onChange(s);
+    onStatus?.("on_list");
     setSuggestions([]);
     setOpen(false);
+  }
+
+  async function check() {
+    const q = value.trim();
+    if (picked.current === value || !/^\d+\s+\S/.test(q)) return;
+    try {
+      const res = await fetch(`/api/addresses?deal=${encodeURIComponent(slug)}&check=1&q=${encodeURIComponent(q)}`);
+      const data = (await res.json()) as { onList: boolean | null };
+      if (data.onList !== null && checking.current === q) onStatus?.(data.onList ? "on_list" : "not_on_list");
+    } catch {
+      // offline: the server still checks when they press Book
+    }
   }
 
   const showList = open && suggestions.length > 0;
@@ -60,10 +80,18 @@ export function AddressInput({ slug, value, onChange, invalid }: { slug: string;
         aria-invalid={invalid}
         onChange={(e) => {
           picked.current = null;
+          checking.current = "";
+          onStatus?.("idle");
           onChange(e.target.value);
         }}
         onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onBlur={() =>
+          setTimeout(() => {
+            setOpen(false);
+            checking.current = value.trim();
+            void check();
+          }, 150)
+        }
         onKeyDown={(e) => {
           if (!showList) return;
           if (e.key === "ArrowDown") {
