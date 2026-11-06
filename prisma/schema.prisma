@@ -205,6 +205,7 @@ enum BookingSource {
   facebook
   flyer
   referral
+  saved_spot // booked from a "your spot is saved" email after an earlier service day
   direct
 }
 
@@ -243,6 +244,9 @@ model Booking {
   photoUrls             String[] // (M2) photo proof
   bookedAt              DateTime?
   onTheWayAt            DateTime? // last "crew is on the way" text
+  // "Save my spot for next time", tapped after the job. Interest only: nothing is
+  // booked or charged. When the next service day opens, staff email these homes.
+  nextTimeAt            DateTime?
   cancelledAt           DateTime?
   completedAt           DateTime?
   createdAt             DateTime         @default(now())

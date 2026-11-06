@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { inviteSavedSpots } from "@/lib/services/next-time";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -276,6 +277,14 @@ export async function textOnTheWay(bookingId: string, dealId: string): Promise<A
 export async function emailRoute(dealId: string): Promise<ActionResult> {
   await requireAdmin();
   const result = await emailRouteToVendor(dealId, "updated");
+  await setFlash(result);
+  revalidatePath(`/admin/deals/${dealId}`);
+  return result;
+}
+
+export async function emailSavedSpots(dealId: string): Promise<ActionResult> {
+  await requireAdmin();
+  const result = await inviteSavedSpots(dealId);
   await setFlash(result);
   revalidatePath(`/admin/deals/${dealId}`);
   return result;

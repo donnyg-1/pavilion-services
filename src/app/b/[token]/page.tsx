@@ -16,6 +16,8 @@ import { CancelBooking } from "./cancel";
 import { ShareBox } from "./share";
 import { NotesEditor } from "./notes";
 import { TextsPrompt, TextsToggle } from "./texts";
+import { SaveMySpot } from "./next-time";
+import { CAN_SAVE_SPOT } from "@/lib/services/next-time";
 
 export const metadata: Metadata = { title: "Your booking", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -77,6 +79,8 @@ export default async function BookingPage({ params, searchParams }: Props) {
           <h1 className="mt-4 text-3xl font-extrabold text-ink sm:text-4xl">{header.title}</h1>
           <p className="mx-auto mt-2 max-w-md text-muted">{header.sub}</p>
         </section>
+
+        {CAN_SAVE_SPOT.includes(booking.status) ? <SaveMySpot token={token} initial={!!booking.nextTimeAt} title={deal.title} email={booking.resident.email} /> : null}
 
         {booking.status === "failed" ? (
           <Card className="p-5 text-center">

@@ -9,6 +9,7 @@ import { config } from "@/lib/config";
 import { formatDeadline, formatServiceDate } from "@/lib/dates";
 import { formatCents } from "@/lib/domain/money";
 import { countBookings, fillCopy, loadDealBySlug, lockDealIfDue, viewDeal } from "@/lib/services/deals";
+import { prefillFrom } from "@/lib/services/next-time";
 import { AttributionTracker } from "./attribution";
 import { BookingForm } from "./booking-form";
 import { StickyCta } from "./sticky-cta";
@@ -49,6 +50,8 @@ export default async function DealPage({ params, searchParams }: Props) {
   const included = deal.whatsIncluded.split("\n").map((s) => s.trim()).filter(Boolean);
   const src = sp.src ?? null;
   const ref = sp.ref ?? null;
+  // From a "your spot is saved" email: fill in their details from last time.
+  const prefill = await prefillFrom(sp.again, deal.communityId);
 
   return (
     <>
@@ -149,6 +152,7 @@ export default async function DealPage({ params, searchParams }: Props) {
                   src={src}
                   refCode={ref}
                   full={v.isFull}
+                  prefill={prefill}
                   payments={{ mode: config.paymentsMode(), publishableKey: config.stripePublishableKey() }}
                 />
               </>

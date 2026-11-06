@@ -128,6 +128,7 @@ export async function BookingsTab({ dealId, status }: { dealId: string; status?:
                     <p>{b.resident.email}</p>
                     <p className="text-muted">{b.resident.phone}</p>
                     <p className={cx("text-xs", b.resident.smsOptIn ? "text-navy-700" : "text-muted")}>{b.resident.smsOptIn ? "Texts on" : "No texts"}</p>
+                    {b.nextTimeAt ? <p className="text-xs font-semibold text-leaf-600">Saved spot for next time</p> : null}
                   </td>
                   <td className="px-3 py-3">
                     <p>{SOURCE_LABELS[b.source]}</p>

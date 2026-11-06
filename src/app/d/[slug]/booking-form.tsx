@@ -20,6 +20,8 @@ type Props = {
   src: string | null;
   refCode: string | null;
   full: boolean;
+  /** Details from an earlier booking, when they came from a "your spot is saved" email. */
+  prefill?: Contact | null;
   payments: { mode: "stripe" | "mock"; publishableKey: string };
 };
 
@@ -28,11 +30,12 @@ const empty: Contact = { name: "", email: "", phone: "", street: "", unit: "" };
 export function BookingForm(props: Props) {
   const { slug, communityName, vendorName, priceCents, addOns, payments } = props;
   const router = useRouter();
-  const [contact, setContact] = useState<Contact>(empty);
+  const [contact, setContact] = useState<Contact>(props.prefill ?? empty);
   const [notes, setNotes] = useState("");
-  const [addressStatus, setAddressStatus] = useState<AddressStatus>("idle");
+  const [addressStatus, setAddressStatus] = useState<AddressStatus>(props.prefill ? "on_list" : "idle");
   const [showNotes, setShowNotes] = useState(false);
   const [showUnit, setShowUnit] = useState(false);
+  const [welcome, setWelcome] = useState(!!props.prefill);
   const [selected, setSelected] = useState<string[]>([]);
   const [mode, setMode] = useState<"book" | "waitlist">(props.full ? "waitlist" : "book");
   const [result, setResult] = useState<BookingResult | null>(null);
@@ -170,6 +173,7 @@ export function BookingForm(props: Props) {
           value={contact.street}
           invalid={!!fieldErrors.street || result?.kind === "not_on_list" || addressStatus === "not_on_list"}
           onStatus={setAddressStatus}
+          prefilled={!!props.prefill}
           onChange={(street) => {
             setContact((c) => ({ ...c, street }));
             if (result?.kind === "not_on_list") setResult(null);
@@ -288,6 +292,22 @@ export function BookingForm(props: Props) {
       </div>
 
       <div className="space-y-4">
+        {welcome && props.prefill ? (
+          <Notice tone="info" title={`Welcome back, ${props.prefill.name.split(" ")[0]}`}>
+            We filled in your details from last time. Just add your card.{" "}
+            <button
+              type="button"
+              className="font-semibold text-navy-700 underline underline-offset-2"
+              onClick={() => {
+                setContact(empty);
+                setAddressStatus("idle");
+                setWelcome(false);
+              }}
+            >
+              Not you?
+            </button>
+          </Notice>
+        ) : null}
         {nameEmailPhone}
         {address}
         {showNotes || notes ? (

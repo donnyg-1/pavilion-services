@@ -6,7 +6,7 @@ import { url } from "@/lib/config";
 import { formatDateTime, formatDeadline, formatServiceDate, isoDate } from "@/lib/dates";
 import { bpsToPercent, formatCents } from "@/lib/domain/money";
 import type { dealStats } from "@/lib/services/admin";
-import { closeSignups, reschedule, setDealStatus } from "../../../actions";
+import { closeSignups, emailSavedSpots, reschedule, setDealStatus } from "../../../actions";
 
 type Stats = Awaited<ReturnType<typeof dealStats>>;
 const pct = (n: number) => `${Math.round(n * 100)}%`;
@@ -107,6 +107,8 @@ export function OverviewTab({ stats }: { stats: Stats }) {
             </p>
           </Card>
 
+          <SavedSpots stats={stats} />
+
           <Card className="space-y-4 p-5">
             <h2 className="text-lg font-bold">Signups</h2>
             {deal.status === "draft" ? (
@@ -184,6 +186,49 @@ export function OverviewTab({ stats }: { stats: Stats }) {
         </div>
       </div>
     </div>
+  );
+}
+
+/** "Save my spot for next time": repeat customers from this and earlier service days. */
+function SavedSpots({ stats }: { stats: Stats }) {
+  const { deal } = stats;
+  const { here, finished, earlier } = stats.savedSpots;
+  if (!finished && !earlier.total) return null;
+  return (
+    <Card className="space-y-3 p-5" data-testid="saved-spots">
+      <h2 className="text-lg font-bold">Saved spots for next time</h2>
+      {finished ? (
+        <p className="text-sm">
+          <span className="font-semibold">
+            {here} of {finished} {finished === 1 ? "home" : "homes"}
+          </span>{" "}
+          <span className="text-muted">on this service day saved a spot for the next {deal.title}.</span>
+        </p>
+      ) : null}
+      {earlier.total ? (
+        <>
+          <p className="text-sm">
+            <span className="font-semibold">
+              {earlier.total} {earlier.total === 1 ? "home" : "homes"}
+            </span>{" "}
+            <span className="text-muted">
+              saved a spot after an earlier {deal.serviceName.toLowerCase()} day: {earlier.booked} booked, {earlier.invited} emailed, {earlier.toInvite} not emailed yet.
+            </span>
+          </p>
+          {earlier.toInvite ? (
+            deal.status === "open" ? (
+              <ActionForm action={emailSavedSpots.bind(null, deal.id)} confirm={`Email ${earlier.toInvite} ${earlier.toInvite === 1 ? "home" : "homes"} a "your spot is saved" link with their details filled in?`}>
+                <SubmitButton>
+                  Email {earlier.toInvite} saved {earlier.toInvite === 1 ? "home" : "homes"}
+                </SubmitButton>
+              </ActionForm>
+            ) : (
+              <p className="text-sm text-muted">Open signups first, then email them. Good to do before you announce it to everyone.</p>
+            )
+          ) : null}
+        </>
+      ) : null}
+    </Card>
   );
 }
 

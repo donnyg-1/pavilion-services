@@ -10,11 +10,12 @@ export type AddressStatus = "idle" | "on_list" | "not_on_list";
  * type, and says whether the address is on the list as soon as it's picked or the
  * resident moves on, instead of after they press Book.
  */
-export function AddressInput({ slug, value, onChange, invalid, onStatus }: { slug: string; value: string; onChange: (v: string) => void; invalid: boolean; onStatus?: (s: AddressStatus) => void }) {
+export function AddressInput({ slug, value, onChange, invalid, onStatus, prefilled }: { slug: string; value: string; onChange: (v: string) => void; invalid: boolean; onStatus?: (s: AddressStatus) => void; prefilled?: boolean }) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
-  const picked = useRef<string | null>(null);
+  // A prefilled address came from the community list, so it counts as picked: no suggestions.
+  const picked = useRef<string | null>(prefilled ? value : null);
   const checking = useRef("");
   const listId = useId();
 

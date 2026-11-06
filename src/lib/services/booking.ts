@@ -14,7 +14,7 @@ import { MOCK_CARDS } from "@/lib/payments/mock";
 import { publicToken, referralCode } from "@/lib/tokens";
 import { bookingContext, bookingInclude, countBookings, dealContext, dealInclude, lockDealIfDue, referralStatus, viewDeal, type DealFull } from "./deals";
 
-export const SOURCES = ["manager", "board", "facebook", "flyer"] as const;
+export const SOURCES = ["manager", "board", "facebook", "flyer", "saved_spot"] as const;
 
 export function parseSource(src: string | null | undefined, ref: string | null | undefined): BookingSource {
   if (ref) return "referral";

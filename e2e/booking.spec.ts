@@ -105,6 +105,16 @@ test("resident books, admin charges, ledger records it", async ({ page, browser 
   await admin.goto(`${dealUrl}?tab=ledger`);
   await expect(admin.locator("tr", { hasText: "E2E Resident" }).first()).toBeVisible();
 
+  // After the job, the resident can save their spot for next time (interest only).
+  await page.reload();
+  await expect(page.getByRole("heading", { name: /All done/ })).toBeVisible();
+  await page.getByRole("button", { name: "Save my spot for next time" }).click();
+  await expect(page.getByText("Your spot is saved for next time")).toBeVisible();
+  await admin.goto(`${dealUrl}?tab=bookings`);
+  await expect(admin.locator("tr").filter({ hasText: email }).getByText("Saved spot for next time")).toBeVisible();
+  await admin.goto(dealUrl);
+  await expect(admin.getByTestId("saved-spots")).toContainText(/1 of \d+ homes?/);
+
   // Both texts this resident got are in the Outbox, next to the vendor's route emails.
   await admin.goto("/admin/outbox");
   await expect(admin.locator("tr", { hasText: "crew@example.com" }).filter({ hasText: /^.*Route list: Gutter Day/ }).first()).toBeVisible();

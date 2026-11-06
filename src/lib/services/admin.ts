@@ -1,3 +1,4 @@
+import { CAN_SAVE_SPOT, savedSpotsFor } from "./next-time";
 import { db } from "@/lib/db";
 import { normalizeAddress } from "@/lib/domain/address";
 import { parseAddressCsv } from "@/lib/domain/csv";
@@ -178,6 +179,7 @@ export const SOURCE_LABELS: Record<string, string> = {
   facebook: "Facebook",
   flyer: "Flyer",
   referral: "Neighbor referral",
+  saved_spot: "Saved spot (repeat)",
   direct: "Direct / unknown",
 };
 
@@ -222,5 +224,25 @@ export async function dealStats(dealId: string) {
     waitlist,
     openReviews,
     vendorReadiness: vendorReadiness(deal.vendor, mountainToday(), deal),
+    savedSpots: await savedSpotStats(dealId),
+  };
+}
+
+/** "Save my spot for next time": who saved on this deal, and who saved on earlier ones. */
+async function savedSpotStats(dealId: string) {
+  const [here, finished, earlier] = await Promise.all([
+    db.booking.count({ where: { dealId, nextTimeAt: { not: null } } }),
+    db.booking.count({ where: { dealId, status: { in: CAN_SAVE_SPOT } } }),
+    savedSpotsFor(dealId),
+  ]);
+  return {
+    here,
+    finished,
+    earlier: {
+      total: earlier.length,
+      booked: earlier.filter((s) => s.booked).length,
+      invited: earlier.filter((s) => s.invited && !s.booked).length,
+      toInvite: earlier.filter((s) => !s.booked && !s.invited).length,
+    },
   };
 }

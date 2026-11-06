@@ -267,6 +267,9 @@ export function receipt(d: DealContext, b: BookingContext, opts: { basePriceCent
       `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 6px -4px;"><tr>${stars}</tr></table>`,
       small(`1 = poor, 5 = excellent. One tap is all it takes.`),
       callout(esc(d.guaranteeLine) + ` Just reply to this email.`),
+      `<p style="margin:22px 0 4px;font-weight:600;">Want this again next time?</p>`,
+      p(`Save your spot and we'll email you as soon as the next ${esc(d.title)} is scheduled. Nothing is booked or charged until you confirm.`),
+      button(`${b.manageUrl}#next-time`, "Save my spot for next time"),
       small(esc(d.reserveFundLine)),
     ].join(""),
   });
@@ -280,6 +283,8 @@ export function receipt(d: DealContext, b: BookingContext, opts: { basePriceCent
     `How did ${d.vendorName} do? Tap a rating (1 = poor, 5 = excellent):`,
     ...[1, 2, 3, 4, 5].map((n) => `${n}: ${opts.ratingUrl(n)}`),
     d.guaranteeLine,
+    "",
+    `Want this again next time? Save your spot: ${b.manageUrl}#next-time`,
   ]);
   return { subject, html, text };
 }
@@ -351,6 +356,29 @@ export function spotOpened(d: DealContext, name: string, priceCents: number): Em
     ].join(""),
   });
   return { subject, html, text: `A spot opened for ${d.title}. First to book gets it: ${d.dealUrl}` };
+}
+
+/**
+ * To a home that tapped "Save my spot for next time" after an earlier service day.
+ * `bookUrl` opens the new deal with their name, contact and address already filled in.
+ */
+export function savedSpotOpen(d: DealContext, name: string, priceCents: number, bookUrl: string): EmailContent {
+  const subject = `Your spot is saved: ${d.title} on ${formatServiceDate(d.serviceDate, "short")}`;
+  const html = layout({
+    preheader: `You asked us to save your spot. Confirm it in a minute.`,
+    body: [
+      h1(`The next ${esc(d.title)} is on`),
+      p(`Hi ${firstName(name)}, you asked us to save your spot after the last one. ${esc(d.vendorName)} is coming back to ${esc(d.communityName)} on <strong>${formatServiceDate(d.serviceDate)}</strong>${d.arrivalWindow ? `, ${esc(d.arrivalWindow)}` : ""}.`),
+      details([
+        ["Group price today", `<strong>${formatCents(priceCents)}</strong> <span style="color:${C.muted};text-decoration:line-through;font-size:13px;">${formatCents(d.normalPriceCents)}</span>`],
+        ["Signups close", formatDeadline(d.signupDeadline)],
+      ]),
+      p(`Your details are already filled in. Just confirm your card. You're charged after the job, same as last time.`),
+      button(bookUrl, "Confirm my spot"),
+      small(`Not this time? Ignore this email. You won't be booked or charged.`),
+    ].join(""),
+  });
+  return { subject, html, text: toText([`Hi ${name.trim().split(/\s+/)[0] || "there"}, the next ${d.title} is on ${formatServiceDate(d.serviceDate)}. You asked us to save your spot.`, `Group price today: ${formatCents(priceCents)}. Signups close ${formatDeadline(d.signupDeadline)}.`, `Confirm your spot (details already filled in): ${bookUrl}`, "Not this time? Ignore this email. You won't be booked or charged."]) };
 }
 
 export function reviewReceived(d: DealContext, name: string, address: string): EmailContent {

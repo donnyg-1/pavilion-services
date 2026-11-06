@@ -82,6 +82,12 @@ Signups can't open for a deal until all three are on file and the insurance cove
 
 When signups close, the vendor gets an email with the route list. Homes are in driving order, with names, phone numbers, add-ons and crew notes, and the same list is attached as a CSV. Staff can resend it from the Bookings tab, for example after a cancellation. It's also re-sent automatically when the service day moves.
 
+## Save my spot for next time
+
+After the job, the booking page, the rating page and the receipt email offer **Save my spot for next time**. It records interest only (`Booking.nextTimeAt`): nothing is booked or charged, and the resident can undo it.
+
+When the next service day for the same service and community is open, its Overview tab shows **Saved spots for next time** with an **Email N saved homes** button. Each home gets one email (deduped per deal) linking to the new deal with `?src=saved_spot&again=<their last booking token>`, which fills in their name, contact and address. They add a card and book as usual, and the booking counts under "Saved spot (repeat)" in the sources table. Only a resident's most recent finished job counts, so someone who came back and didn't save again isn't emailed.
+
 ## Texts (Twilio)
 
 Residents who tick "Text me when the crew is on the way" get:
